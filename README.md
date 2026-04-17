@@ -7,6 +7,25 @@
 <a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
 </p>
 
+## Kp-Bungas-Website Setup
+
+Panduan lengkap install dan setup dari clone sampai website berjalan bisa dilihat di:
+
+- [TUTORIAL-SETUP-LOCAL.md](TUTORIAL-SETUP-LOCAL.md)
+
+Quick start:
+
+```bash
+git clone https://github.com/fienda87/Kp-Bungas-Website
+cd Kp-Bungas-Website
+composer install
+cp .env.example .env
+php artisan key:generate
+php artisan migrate
+npm install
+composer run dev
+```
+
 ## About Laravel
 
 Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
