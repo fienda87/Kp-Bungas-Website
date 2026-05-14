@@ -1,21 +1,9 @@
 <script setup>
 import { computed, ref } from 'vue';
+import { useGalleryStore } from '../../Stores/galleryStore';
 import GalleryPagination from './GalleryPagination.vue';
 
-const galleryItems = [
-    { id: 1, src: '/images/gallery/galeri-1.jpg', alt: 'Bibit tanaman di media tanam hidroponik 1' },
-    { id: 2, src: '/images/gallery/galeri-2.jpg', alt: 'Tanaman cabai dengan buah berwarna 1' },
-    { id: 3, src: '/images/gallery/galeri-3.jpg', alt: 'Deretan tanaman hias kampung 1' },
-    { id: 4, src: '/images/gallery/galeri-4.jpg', alt: 'Rumah kaca dan area tanam komunitas 1' },
-    { id: 5, src: '/images/gallery/galeri-5.jpg', alt: 'Ruang hijau dan papan edukasi kebun 1' },
-    { id: 6, src: '/images/gallery/galeri-6.jpg', alt: 'Tanaman kaktus dan dedaunan tropis 1' },
-    { id: 7, src: '/images/gallery/galeri-2.jpg', alt: 'Tanaman cabai dengan buah berwarna 2' },
-    { id: 8, src: '/images/gallery/galeri-1.jpg', alt: 'Bibit tanaman di media tanam hidroponik 2' },
-    { id: 9, src: '/images/gallery/galeri-4.jpg', alt: 'Rumah kaca dan area tanam komunitas 2' },
-    { id: 10, src: '/images/gallery/galeri-3.jpg', alt: 'Deretan tanaman hias kampung 2' },
-    { id: 11, src: '/images/gallery/galeri-6.jpg', alt: 'Tanaman kaktus dan dedaunan tropis 2' },
-    { id: 12, src: '/images/gallery/galeri-5.jpg', alt: 'Ruang hijau dan papan edukasi kebun 2' },
-];
+const galleryStore = useGalleryStore();
 
 const cardClasses = [
     'col-span-2 h-[520px]',
@@ -29,11 +17,11 @@ const cardClasses = [
 const pageSize = 6;
 const currentPage = ref(1);
 
-const totalPages = computed(() => Math.ceil(galleryItems.length / pageSize));
+const totalPages = computed(() => Math.ceil(galleryStore.galleryItems.length / pageSize));
 
 const pagedImages = computed(() => {
     const start = (currentPage.value - 1) * pageSize;
-    const slice = galleryItems.slice(start, start + pageSize);
+    const slice = galleryStore.galleryItems.slice(start, start + pageSize);
 
     return slice.map((item, index) => ({
         ...item,
