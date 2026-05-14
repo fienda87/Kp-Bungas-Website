@@ -1,18 +1,7 @@
 <script setup>
-const features = [
-    {
-        title: 'Urban Farming',
-        description: 'Lahan kecil kota dimaksimalkan untuk menghasilkan pangan sehat dan segar setiap hari.',
-    },
-    {
-        title: 'Hidroponik Komunitas',
-        description: 'Program bersama warga untuk belajar, menanam, dan panen dalam sistem hidroponik berkelanjutan.',
-    },
-    {
-        title: 'Edukasi Hijau',
-        description: 'Kelas dan aktivitas lingkungan untuk anak muda, keluarga, dan komunitas sekitar.',
-    },
-];
+import { useProgramStore } from '../../Stores/programStore';
+
+const programStore = useProgramStore();
 </script>
 
 <template>
@@ -29,7 +18,7 @@ const features = [
 
             <div class="mt-10 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                 <article
-                    v-for="feature in features"
+                    v-for="feature in programStore.features"
                     :key="feature.title"
                     class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-md"
                 >
