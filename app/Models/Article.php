@@ -18,6 +18,7 @@ class Article extends Model
         'content',
         'excerpt',
         'featured_image',
+        'pdf_file',
         'status',
         'published_at',
     ];

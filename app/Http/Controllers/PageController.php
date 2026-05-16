@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Http\Resources\ArticleResource;
 use App\Models\Article;
+use App\Models\Gallery;
+use App\Models\Program;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -17,8 +19,13 @@ class PageController extends Controller
             ->take(3)
             ->get();
 
+        $activePrograms = Program::where('is_active', true)
+            ->orderBy('order')
+            ->get();
+
         return Inertia::render('Home', [
             'featuredArticles' => ArticleResource::collection($featuredArticles),
+            'programs' => $activePrograms,
         ]);
     }
 
@@ -29,7 +36,13 @@ class PageController extends Controller
 
     public function program()
     {
-        return Inertia::render('Program');
+        $programs = Program::where('is_active', true)
+            ->orderBy('order')
+            ->get();
+
+        return Inertia::render('Program', [
+            'programs' => $programs,
+        ]);
     }
 
     public function perjalanan()
@@ -44,7 +57,11 @@ class PageController extends Controller
 
     public function galeri()
     {
-        return Inertia::render('Galeri');
+        $galleries = Gallery::with('photos')->latest()->get();
+
+        return Inertia::render('Galeri', [
+            'galleries' => $galleries,
+        ]);
     }
 
     public function kunjungiKami()

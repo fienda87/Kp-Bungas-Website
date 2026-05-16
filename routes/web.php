@@ -1,5 +1,10 @@
 <?php
 
+use App\Http\Controllers\Admin\ArticleController as AdminArticleController;
+use App\Http\Controllers\Admin\CategoryController as AdminCategoryController;
+use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
+use App\Http\Controllers\Admin\GalleryController as AdminGalleryController;
+use App\Http\Controllers\Admin\ProgramController as AdminProgramController;
 use App\Http\Controllers\PageController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Foundation\Application;
@@ -22,6 +27,23 @@ Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+});
+
+// Admin Routes
+Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
+    Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
+    
+    Route::resource('articles', AdminArticleController::class);
+    Route::resource('categories', AdminCategoryController::class);
+    Route::resource('programs', AdminProgramController::class);
+    
+    Route::get('galleries', [AdminGalleryController::class, 'index'])->name('galleries.index');
+    Route::get('galleries/{gallery}', [AdminGalleryController::class, 'show'])->name('galleries.show');
+    Route::post('galleries', [AdminGalleryController::class, 'store'])->name('galleries.store');
+    Route::put('galleries/{gallery}', [AdminGalleryController::class, 'update'])->name('galleries.update');
+    Route::delete('galleries/{gallery}', [AdminGalleryController::class, 'destroy'])->name('galleries.destroy');
+    Route::post('galleries/{gallery}/photos', [AdminGalleryController::class, 'uploadPhotos'])->name('galleries.photos.upload');
+    Route::delete('galleries/photos/{photo}', [AdminGalleryController::class, 'deletePhoto'])->name('galleries.photos.destroy');
 });
 
 require __DIR__.'/auth.php';

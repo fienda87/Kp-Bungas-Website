@@ -21,6 +21,7 @@ class ArticleResource extends JsonResource
             'content' => $this->content,
             'excerpt' => $this->excerpt,
             'featured_image' => $this->featured_image,
+            'pdf_file' => $this->pdf_file,
             'status' => $this->status,
             'published_at' => $this->published_at,
             'author' => new UserResource($this->whenLoaded('user')),
