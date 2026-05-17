@@ -1,34 +1,7 @@
 <script setup>
-const programs = [
-    {
-        id: 1,
-        title: 'Urban Farming',
-        description: 'Program penanaman di lahan kota yang terbatas dengan teknik maksimal untuk menghasilkan buah, bunga, dan sayur organik berkualitas.',
-        icon: '🌾',
-        image: 'https://via.placeholder.com/400x300?text=Urban+Farming',
-    },
-    {
-        id: 2,
-        title: 'Hidroponik Komunitas',
-        description: 'Sistem pertanian berbasis air yang efisien, mudah dipelajari, dan bisa dikerjakan bersama-sama dalam komunitas.',
-        icon: '💧',
-        image: 'https://via.placeholder.com/400x300?text=Hidroponik',
-    },
-    {
-        id: 3,
-        title: 'Edukasi Lingkungan',
-        description: 'Workshop, kelas, dan aktivitas pembelajaran untuk anak muda, keluarga, dan komunitas tentang keberlanjutan.',
-        icon: '📚',
-        image: 'https://via.placeholder.com/400x300?text=Edukasi',
-    },
-    {
-        id: 4,
-        title: 'Pengolahan Sampah',
-        description: 'Program pengurangan sampah melalui kompos, daur ulang, dan manajemen limbah berkelanjutan berbasis rumah tangga.',
-        icon: '♻️',
-        image: 'https://via.placeholder.com/400x300?text=Sampah',
-    },
-];
+import { useProgramStore } from '../../Stores/programStore';
+
+const programStore = useProgramStore();
 </script>
 
 <template>
@@ -45,7 +18,7 @@ const programs = [
             <!-- Programs Grid -->
             <div class="grid gap-8 md:grid-cols-2 lg:grid-cols-2">
                 <article
-                    v-for="program in programs"
+                    v-for="program in programStore.programs"
                     :key="program.id"
                     class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-md transition hover:-translate-y-2 hover:shadow-xl"
                 >
