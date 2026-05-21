@@ -2,14 +2,17 @@
 
 namespace Database\Factories;
 
-use App\Models\Article;
+use App\Models\News;
 use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Support\Str;
 
 /**
- * @extends Factory<Article>
+ * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\News>
  */
-class ArticleFactory extends Factory
+class NewsFactory extends Factory
 {
+    protected $model = News::class;
+
     /**
      * Define the model's default state.
      *
@@ -19,12 +22,11 @@ class ArticleFactory extends Factory
     {
         $title = $this->faker->sentence();
         return [
-            'user_id' => \App\Models\User::factory(),
-            'category_id' => \App\Models\Category::factory(),
             'title' => $title,
-            'slug' => \Illuminate\Support\Str::slug($title),
+            'slug' => Str::slug($title) . '-' . rand(1000, 9999),
+            'category' => $this->faker->randomElement(['Berita', 'Kegiatan', 'Pengumuman']),
             'content' => $this->faker->paragraphs(3, true),
-            'excerpt' => $this->faker->sentence(),
+            'thumbnail' => null,
             'status' => 'published',
             'published_at' => now(),
         ];

@@ -1,7 +1,6 @@
 <?php
 
-use App\Http\Controllers\Admin\ArticleController as AdminArticleController;
-use App\Http\Controllers\Admin\CategoryController as AdminCategoryController;
+use App\Http\Controllers\Admin\NewsController as AdminNewsController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\GalleryController as AdminGalleryController;
 use App\Http\Controllers\Admin\ProgramController as AdminProgramController;
@@ -33,8 +32,7 @@ Route::middleware('auth')->group(function () {
 Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
     
-    Route::resource('articles', AdminArticleController::class);
-    Route::resource('categories', AdminCategoryController::class);
+    Route::resource('news', AdminNewsController::class);
     Route::resource('programs', AdminProgramController::class);
     
     Route::get('galleries', [AdminGalleryController::class, 'index'])->name('galleries.index');

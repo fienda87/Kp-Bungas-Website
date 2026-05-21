@@ -2,30 +2,24 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Resources\ArticleResource;
-use App\Models\Article;
-use App\Models\Gallery;
+use App\Models\News;
 use App\Models\Program;
-use Illuminate\Http\Request;
+use App\Models\Gallery;
+use App\Http\Resources\NewsResource;
 use Inertia\Inertia;
+use Illuminate\Http\Request;
 
 class PageController extends Controller
 {
     public function home()
     {
-        $featuredArticles = Article::with(['user', 'category'])
-            ->where('status', 'published')
-            ->latest('published_at')
+        $featuredNews = News::where('status', 'published')
+            ->orderBy('published_at', 'desc')
             ->take(3)
             ->get();
 
-        $activePrograms = Program::where('is_active', true)
-            ->orderBy('order')
-            ->get();
-
         return Inertia::render('Home', [
-            'featuredArticles' => ArticleResource::collection($featuredArticles),
-            'programs' => $activePrograms,
+            'featuredNews' => NewsResource::collection($featuredNews)
         ]);
     }
 
@@ -36,18 +30,10 @@ class PageController extends Controller
 
     public function program()
     {
-        $programs = Program::where('is_active', true)
-            ->orderBy('order')
-            ->get();
-
+        $programs = Program::where('is_active', true)->orderBy('order')->get();
         return Inertia::render('Program', [
-            'programs' => $programs,
+            'programs' => $programs
         ]);
-    }
-
-    public function perjalanan()
-    {
-        return Inertia::render('Perjalanan');
     }
 
     public function dampak()
@@ -58,14 +44,18 @@ class PageController extends Controller
     public function galeri()
     {
         $galleries = Gallery::with('photos')->latest()->get();
-
         return Inertia::render('Galeri', [
-            'galleries' => $galleries,
+            'galleries' => $galleries
         ]);
     }
 
     public function kunjungiKami()
     {
         return Inertia::render('KunjungiKami');
+    }
+
+    public function perjalanan()
+    {
+        return Inertia::render('Perjalanan');
     }
 }

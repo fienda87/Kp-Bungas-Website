@@ -5,7 +5,7 @@ namespace App\Http\Resources;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
-class ArticleResource extends JsonResource
+class NewsResource extends JsonResource
 {
     /**
      * Transform the resource into an array.
@@ -18,14 +18,13 @@ class ArticleResource extends JsonResource
             'id' => $this->id,
             'title' => $this->title,
             'slug' => $this->slug,
+            'category' => $this->category,
+            'thumbnail' => $this->thumbnail ? asset('storage/' . $this->thumbnail) : null,
             'content' => $this->content,
-            'excerpt' => $this->excerpt,
-            'featured_image' => $this->featured_image,
-            'pdf_file' => $this->pdf_file,
             'status' => $this->status,
-            'published_at' => $this->published_at,
-            'author' => new UserResource($this->whenLoaded('user')),
-            'category' => new CategoryResource($this->whenLoaded('category')),
+            'published_at' => $this->published_at ? $this->published_at->format('Y-m-d H:i:s') : null,
+            'created_at' => $this->created_at->format('Y-m-d H:i:s'),
+            'updated_at' => $this->updated_at->format('Y-m-d H:i:s'),
         ];
     }
 }
