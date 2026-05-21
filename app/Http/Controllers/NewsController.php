@@ -12,8 +12,17 @@ class NewsController extends Controller
     {
         $query = News::where('status', 'published');
 
+        if ($request->has('search')) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('title', 'like', "%{$search}%")
+                  ->orWhere('content', 'like', "%{$search}%");
+            });
+        }
+
         if ($request->has('category')) {
-            $query->where('category', $request->category);
+            $categories = explode(',', $request->category);
+            $query->whereIn('category', $categories);
         }
 
         $news = $query->orderBy('published_at', 'desc')->paginate(10);
@@ -26,6 +35,8 @@ class NewsController extends Controller
         if ($news->status !== 'published') {
             abort(404);
         }
+
+        $news->incrementViewCount();
 
         return new NewsResource($news);
     }

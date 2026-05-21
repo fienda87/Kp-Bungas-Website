@@ -63,15 +63,25 @@ class PageController extends Controller
     {
         $query = News::where('status', 'published');
 
+        if ($request->has('search')) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('title', 'like', "%{$search}%")
+                  ->orWhere('content', 'like', "%{$search}%");
+            });
+        }
+
         if ($request->has('category')) {
-            $query->where('category', $request->category);
+            $categories = explode(',', $request->category);
+            $query->whereIn('category', $categories);
         }
 
         $news = $query->orderBy('published_at', 'desc')->paginate(9);
 
         return Inertia::render('News/Index', [
             'news' => NewsResource::collection($news),
-            'categories' => News::where('status', 'published')->distinct()->pluck('category')
+            'categories' => News::where('status', 'published')->distinct()->pluck('category'),
+            'filters' => $request->only(['search', 'category'])
         ]);
     }
 
@@ -80,6 +90,8 @@ class PageController extends Controller
         if ($news->status !== 'published') {
             abort(404);
         }
+
+        $news->incrementViewCount();
 
         return Inertia::render('News/Show', [
             'news' => new NewsResource($news),
