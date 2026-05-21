@@ -1,12 +1,17 @@
 <script setup>
 import AppLayout from '@/Layouts/Admin/AppLayout.vue';
 import StatCard from '@/Components/Admin/StatCard.vue';
-import { Head } from '@inertiajs/vue3';
+import { Head, Link } from '@inertiajs/vue3';
 
-const stats = [
-    { title: 'Total Berita', value: '24', icon: 'M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z', trend: '+12%', trendType: 'up' },
-    { title: 'Program Aktif', value: '8', icon: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4', trend: 'Stabil', trendType: 'neutral' },
-    { title: 'Total Galeri', value: '15', icon: 'M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z', trend: '+3', trendType: 'up' },
+const props = defineProps({
+    stats: Object,
+    recentNews: Array
+});
+
+const statCards = [
+    { title: 'Total Berita', value: props.stats.news_count, icon: 'M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z', trend: 'Terupdate', trendType: 'up' },
+    { title: 'Program Aktif', value: props.stats.programs_count, icon: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4', trend: 'Stabil', trendType: 'neutral' },
+    { title: 'Total Galeri', value: props.stats.galleries_count, icon: 'M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z', trend: 'Koleksi', trendType: 'up' },
     { title: 'User Terdaftar', value: '1', icon: 'M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z', trend: 'Admin Only', trendType: 'neutral' },
 ];
 </script>
@@ -23,7 +28,7 @@ const stats = [
         <!-- Stats Grid -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
             <StatCard 
-                v-for="stat in stats" 
+                v-for="stat in statCards" 
                 :key="stat.title"
                 v-bind="stat"
             />
@@ -34,15 +39,18 @@ const stats = [
             <div class="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
                 <h3 class="text-lg font-bold text-gray-900 mb-4">Berita Terbaru</h3>
                 <div class="space-y-4">
-                    <div v-for="i in 3" :key="i" class="flex items-center p-3 hover:bg-gray-50 rounded-xl transition-colors cursor-pointer border border-transparent hover:border-gray-100">
-                        <div class="w-12 h-12 bg-gray-200 rounded-lg shrink-0"></div>
+                    <div v-for="news in recentNews" :key="news.id" class="flex items-center p-3 hover:bg-gray-50 rounded-xl transition-colors cursor-pointer border border-transparent hover:border-gray-100">
+                        <img v-if="news.thumbnail" :src="'/storage/' + news.thumbnail" class="w-12 h-12 bg-gray-200 rounded-lg shrink-0 object-cover" />
+                        <div v-else class="w-12 h-12 bg-gray-200 rounded-lg shrink-0"></div>
                         <div class="ml-4">
-                            <p class="font-semibold text-gray-900">Judul Berita Ke-{{ i }}</p>
-                            <p class="text-xs text-gray-500">Dipublikasikan pada 14 Mei 2026 • Kategori Berita</p>
+                            <p class="font-semibold text-gray-900">{{ news.title }}</p>
+                            <p class="text-xs text-gray-500">
+                                {{ news.published_at ? new Date(news.published_at).toLocaleDateString() : 'Draft' }} • {{ news.category }}
+                            </p>
                         </div>
                     </div>
                 </div>
-                <button class="mt-6 text-primary font-bold text-sm hover:underline">Lihat Semua Berita →</button>
+                <Link :href="route('admin.news.index')" class="mt-6 inline-block text-primary font-bold text-sm hover:underline">Lihat Semua Berita →</Link>
             </div>
 
             <div class="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">

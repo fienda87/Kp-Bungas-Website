@@ -2,23 +2,24 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Resources\ArticleResource;
-use App\Models\Article;
-use Illuminate\Http\Request;
+use App\Models\News;
+use App\Models\Program;
+use App\Models\Gallery;
+use App\Http\Resources\NewsResource;
 use Inertia\Inertia;
+use Illuminate\Http\Request;
 
 class PageController extends Controller
 {
     public function home()
     {
-        $featuredArticles = Article::with(['user', 'category'])
-            ->where('status', 'published')
-            ->latest('published_at')
+        $featuredNews = News::where('status', 'published')
+            ->orderBy('published_at', 'desc')
             ->take(3)
             ->get();
 
         return Inertia::render('Home', [
-            'featuredArticles' => ArticleResource::collection($featuredArticles),
+            'featuredNews' => NewsResource::collection($featuredNews)
         ]);
     }
 
@@ -29,12 +30,10 @@ class PageController extends Controller
 
     public function program()
     {
-        return Inertia::render('Program');
-    }
-
-    public function perjalanan()
-    {
-        return Inertia::render('Perjalanan');
+        $programs = Program::where('is_active', true)->orderBy('order')->get();
+        return Inertia::render('Program', [
+            'programs' => $programs
+        ]);
     }
 
     public function dampak()
@@ -44,11 +43,53 @@ class PageController extends Controller
 
     public function galeri()
     {
-        return Inertia::render('Galeri');
+        $galleries = Gallery::with('photos')->latest()->get();
+        return Inertia::render('Galeri', [
+            'galleries' => $galleries
+        ]);
     }
 
     public function kunjungiKami()
     {
         return Inertia::render('KunjungiKami');
+    }
+
+    public function perjalanan()
+    {
+        return Inertia::render('Perjalanan');
+    }
+
+    public function newsIndex(Request $request)
+    {
+        $query = News::where('status', 'published');
+
+        if ($request->has('category')) {
+            $query->where('category', $request->category);
+        }
+
+        $news = $query->orderBy('published_at', 'desc')->paginate(9);
+
+        return Inertia::render('News/Index', [
+            'news' => NewsResource::collection($news),
+            'categories' => News::where('status', 'published')->distinct()->pluck('category')
+        ]);
+    }
+
+    public function newsShow(News $news)
+    {
+        if ($news->status !== 'published') {
+            abort(404);
+        }
+
+        return Inertia::render('News/Show', [
+            'news' => new NewsResource($news),
+            'recentNews' => NewsResource::collection(
+                News::where('status', 'published')
+                    ->where('id', '!=', $news->id)
+                    ->latest('published_at')
+                    ->take(3)
+                    ->get()
+            )
+        ]);
     }
 }
