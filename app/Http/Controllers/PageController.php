@@ -58,4 +58,38 @@ class PageController extends Controller
     {
         return Inertia::render('Perjalanan');
     }
+
+    public function newsIndex(Request $request)
+    {
+        $query = News::where('status', 'published');
+
+        if ($request->has('category')) {
+            $query->where('category', $request->category);
+        }
+
+        $news = $query->orderBy('published_at', 'desc')->paginate(9);
+
+        return Inertia::render('News/Index', [
+            'news' => NewsResource::collection($news),
+            'categories' => News::where('status', 'published')->distinct()->pluck('category')
+        ]);
+    }
+
+    public function newsShow(News $news)
+    {
+        if ($news->status !== 'published') {
+            abort(404);
+        }
+
+        return Inertia::render('News/Show', [
+            'news' => new NewsResource($news),
+            'recentNews' => NewsResource::collection(
+                News::where('status', 'published')
+                    ->where('id', '!=', $news->id)
+                    ->latest('published_at')
+                    ->take(3)
+                    ->get()
+            )
+        ]);
+    }
 }

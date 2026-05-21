@@ -29,4 +29,15 @@ class NewsController extends Controller
 
         return new NewsResource($news);
     }
+
+    public function categories()
+    {
+        $categories = News::where('status', 'published')
+            ->distinct()
+            ->pluck('category');
+
+        return response()->json([
+            'data' => $categories
+        ]);
+    }
 }

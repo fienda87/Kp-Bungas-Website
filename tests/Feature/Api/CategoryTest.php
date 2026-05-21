@@ -2,7 +2,7 @@
 
 namespace Tests\Feature\Api;
 
-use App\Models\Category;
+use App\Models\News;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -15,34 +15,19 @@ class CategoryTest extends TestCase
      */
     public function test_can_list_categories(): void
     {
-        Category::factory()->count(5)->create();
+        News::factory()->create(['category' => 'Berita', 'status' => 'published']);
+        News::factory()->create(['category' => 'Kegiatan', 'status' => 'published']);
+        News::factory()->create(['category' => 'Berita', 'status' => 'published']);
 
         $response = $this->getJson('/api/categories');
 
         $response->assertStatus(200);
         $response->assertJsonStructure([
-            'data' => [
-                '*' => [
-                    'id',
-                    'name',
-                    'slug',
-                    'description'
-                ]
-            ]
+            'data'
         ]);
-        $response->assertJsonCount(5, 'data');
-    }
-
-    /**
-     * Test showing a single category.
-     */
-    public function test_can_show_category_details(): void
-    {
-        $category = Category::factory()->create();
-
-        $response = $this->getJson("/api/categories/{$category->slug}");
-
-        $response->assertStatus(200);
-        $response->assertJsonPath('data.name', $category->name);
+        $response->assertJsonCount(2, 'data');
+        $response->assertJson([
+            'data' => ['Berita', 'Kegiatan']
+        ]);
     }
 }

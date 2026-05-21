@@ -18,6 +18,9 @@ Route::get('/dampak', [PageController::class, 'dampak'])->name('dampak');
 Route::get('/galeri', [PageController::class, 'galeri'])->name('galeri');
 Route::get('/kunjungi-kami', [PageController::class, 'kunjungiKami'])->name('kunjungi-kami');
 
+Route::get('/news', [PageController::class, 'newsIndex'])->name('news.index');
+Route::get('/news/{news}', [PageController::class, 'newsShow'])->name('news.show');
+
 Route::get('/dashboard', function () {
     return Inertia::render('Dashboard');
 })->middleware(['auth', 'verified'])->name('dashboard');
