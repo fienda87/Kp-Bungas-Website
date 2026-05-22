@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\News;
+use App\Models\Category;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
@@ -11,17 +12,32 @@ use Illuminate\Support\Facades\Storage;
 
 class NewsController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $news = News::orderBy('created_at', 'desc')->paginate(10);
+        $query = News::query();
+
+        if ($request->has('search')) {
+            $query->where('title', 'like', '%' . $request->search . '%');
+        }
+
+        if ($request->has('category') && $request->category !== '') {
+            $query->where('category', $request->category);
+        }
+
+        $news = $query->orderBy('created_at', 'desc')->paginate(10)->withQueryString();
+
         return Inertia::render('Admin/News/Index', [
-            'news' => $news
+            'news' => $news,
+            'categories' => Category::all(),
+            'filters' => $request->only(['search', 'category'])
         ]);
     }
 
     public function create()
     {
-        return Inertia::render('Admin/News/Create');
+        return Inertia::render('Admin/News/Create', [
+            'categories' => Category::all()
+        ]);
     }
 
     public function store(Request $request)
@@ -60,7 +76,8 @@ class NewsController extends Controller
     public function edit(News $news)
     {
         return Inertia::render('Admin/News/Edit', [
-            'news' => $news
+            'news' => $news,
+            'categories' => Category::all()
         ]);
     }
 
@@ -106,9 +123,11 @@ class NewsController extends Controller
         if ($news->thumbnail) {
             Storage::disk('public')->delete($news->thumbnail);
         }
+
         if ($news->pdf_file) {
             Storage::disk('public')->delete($news->pdf_file);
         }
+
         $news->delete();
 
         return redirect()->route('admin.news.index')->with('success', 'News deleted successfully.');

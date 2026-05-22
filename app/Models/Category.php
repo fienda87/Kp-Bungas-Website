@@ -12,8 +12,12 @@ class Category extends Model
 
     protected $fillable = ['name', 'slug', 'description'];
 
-    public function articles(): HasMany
+    /**
+     * Get the news items for the category.
+     * Note: News uses category name as string since the migration.
+     */
+    public function news(): HasMany
     {
-        return $this->hasMany(Article::class);
+        return $this->hasMany(News::class, 'category', 'name');
     }
 }
