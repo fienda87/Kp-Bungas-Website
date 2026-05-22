@@ -102,17 +102,17 @@ const showToast = (message, type = 'success') => {
                             
                             <div>
                                 <label for="category" class="block text-xs text-gray-500 uppercase tracking-wider mb-1">Kategori</label>
-                                <select
+                                <input
+                                    list="category-list"
                                     id="category"
                                     v-model="form.category"
                                     class="w-full border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm"
+                                    placeholder="Pilih atau ketik kategori..."
                                     required
                                 >
-                                    <option value="" disabled>Pilih Kategori</option>
-                                    <option v-for="cat in categories" :key="cat.id" :value="cat.name">
-                                        {{ cat.name }}
-                                    </option>
-                                </select>
+                                <datalist id="category-list">
+                                    <option v-for="cat in categories" :key="cat" :value="cat" />
+                                </datalist>
                                 <div v-if="form.errors.category" class="text-red-500 text-xs mt-1">{{ form.errors.category }}</div>
                             </div>
 

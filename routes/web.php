@@ -37,7 +37,6 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
     
     Route::resource('news', AdminNewsController::class);
-    Route::resource('categories', AdminCategoryController::class);
     Route::resource('programs', AdminProgramController::class);
     
     Route::get('galleries', [AdminGalleryController::class, 'index'])->name('galleries.index');

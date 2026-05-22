@@ -96,8 +96,8 @@ const formatDate = (dateString) => {
                                 class="w-full border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm"
                             >
                                 <option value="">Semua Kategori</option>
-                                <option v-for="cat in categories" :key="cat.id" :value="cat.name">
-                                    {{ cat.name }}
+                                <option v-for="cat in categories" :key="cat" :value="cat">
+                                    {{ cat }}
                                 </option>
                             </select>
                         </div>

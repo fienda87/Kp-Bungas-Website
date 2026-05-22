@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\News;
-use App\Models\Category;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
@@ -26,17 +25,20 @@ class NewsController extends Controller
 
         $news = $query->orderBy('created_at', 'desc')->paginate(10)->withQueryString();
 
+        $categories = News::distinct()->pluck('category');
+
         return Inertia::render('Admin/News/Index', [
             'news' => $news,
-            'categories' => Category::all(),
+            'categories' => $categories,
             'filters' => $request->only(['search', 'category'])
         ]);
     }
 
     public function create()
     {
+        $categories = News::distinct()->pluck('category');
         return Inertia::render('Admin/News/Create', [
-            'categories' => Category::all()
+            'categories' => $categories
         ]);
     }
 
@@ -75,9 +77,10 @@ class NewsController extends Controller
 
     public function edit(News $news)
     {
+        $categories = News::distinct()->pluck('category');
         return Inertia::render('Admin/News/Edit', [
             'news' => $news,
-            'categories' => Category::all()
+            'categories' => $categories
         ]);
     }
 
