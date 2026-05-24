@@ -17,6 +17,11 @@ class ProgramController extends Controller
         ]);
     }
 
+    public function create()
+    {
+        return Inertia::render('Admin/Programs/Create');
+    }
+
     public function store(Request $request)
     {
         $validated = $request->validate([
@@ -35,6 +40,13 @@ class ProgramController extends Controller
         Program::create($validated);
 
         return redirect()->route('admin.programs.index')->with('success', 'Program created successfully.');
+    }
+
+    public function edit(Program $program)
+    {
+        return Inertia::render('Admin/Programs/Edit', [
+            'program' => $program
+        ]);
     }
 
     public function update(Request $request, Program $program)

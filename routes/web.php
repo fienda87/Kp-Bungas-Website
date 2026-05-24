@@ -44,6 +44,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::put('galleries/{gallery}', [AdminGalleryController::class, 'update'])->name('galleries.update');
     Route::delete('galleries/{gallery}', [AdminGalleryController::class, 'destroy'])->name('galleries.destroy');
     Route::post('galleries/{gallery}/photos', [AdminGalleryController::class, 'uploadPhotos'])->name('galleries.photos.upload');
+    Route::patch('galleries/photos/{photo}', [AdminGalleryController::class, 'updatePhoto'])->name('galleries.photos.update');
     Route::delete('galleries/photos/{photo}', [AdminGalleryController::class, 'deletePhoto'])->name('galleries.photos.destroy');
 });
 

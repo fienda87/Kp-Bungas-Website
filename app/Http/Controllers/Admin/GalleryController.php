@@ -18,6 +18,11 @@ class GalleryController extends Controller
         ]);
     }
 
+    public function create()
+    {
+        return Inertia::render('Admin/Galleries/Create');
+    }
+
     public function show(Gallery $gallery)
     {
         return Inertia::render('Admin/Galleries/Show', [
@@ -40,6 +45,13 @@ class GalleryController extends Controller
         Gallery::create($validated);
 
         return redirect()->route('admin.galleries.index')->with('success', 'Gallery album created successfully.');
+    }
+
+    public function edit(Gallery $gallery)
+    {
+        return Inertia::render('Admin/Galleries/Edit', [
+            'gallery' => $gallery
+        ]);
     }
 
     public function update(Request $request, Gallery $gallery)
@@ -101,5 +113,17 @@ class GalleryController extends Controller
         $photo->delete();
 
         return redirect()->back()->with('success', 'Photo deleted successfully.');
+    }
+
+    public function updatePhoto(Request $request, GalleryPhoto $photo)
+    {
+        $validated = $request->validate([
+            'caption' => 'nullable|string|max:255',
+            'order' => 'nullable|integer',
+        ]);
+
+        $photo->update($validated);
+
+        return redirect()->back()->with('success', 'Photo updated successfully.');
     }
 }
