@@ -11,6 +11,9 @@ use Illuminate\Support\Facades\Storage;
 
 class NewsController extends Controller
 {
+    /**
+     * Display a listing of the news.
+     */
     public function index(Request $request)
     {
         $query = News::query();
@@ -19,108 +22,110 @@ class NewsController extends Controller
             $query->where('title', 'like', '%' . $request->search . '%');
         }
 
-        if ($request->has('category') && $request->category !== '') {
-            $query->where('category', $request->category);
-        }
-
-        $news = $query->orderBy('created_at', 'desc')->paginate(10)->withQueryString();
-
-        $categories = News::distinct()->pluck('category');
+        $news = $query->latest()->paginate(10)->withQueryString();
 
         return Inertia::render('Admin/News/Index', [
             'news' => $news,
-            'categories' => $categories,
-            'filters' => $request->only(['search', 'category'])
+            'filters' => $request->only(['search']),
         ]);
     }
 
+    /**
+     * Show the form for creating a new news article.
+     */
     public function create()
     {
-        $categories = News::distinct()->pluck('category');
+        // Fetch existing categories to provide suggestions
+        $categories = News::distinct()->pluck('category')->filter()->values();
+
         return Inertia::render('Admin/News/Create', [
             'categories' => $categories
         ]);
     }
 
+    /**
+     * Store a newly created news article in storage.
+     */
     public function store(Request $request)
     {
         $validated = $request->validate([
             'title' => 'required|string|max:255',
-            'category' => 'required|string|max:255',
             'content' => 'required|string',
+            'category' => 'required|string|max:100',
             'thumbnail' => 'nullable|image|max:2048',
             'pdf_file' => 'nullable|mimes:pdf|max:10240',
-            'status' => 'required|in:draft,published',
-            'published_at' => 'nullable|date',
+            'is_published' => 'boolean',
         ]);
 
-        $validated['slug'] = Str::slug($validated['title']) . '-' . rand(1000, 9999);
-
         if ($request->hasFile('thumbnail')) {
-            $path = $request->file('thumbnail')->store('news/thumbnails', 'public');
-            $validated['thumbnail'] = $path;
+            $validated['thumbnail'] = $request->file('thumbnail')->store('news/thumbnails', 'public');
         }
 
         if ($request->hasFile('pdf_file')) {
-            $path = $request->file('pdf_file')->store('news/pdfs', 'public');
-            $validated['pdf_file'] = $path;
+            $validated['pdf_file'] = $request->file('pdf_file')->store('news/pdfs', 'public');
         }
 
-        if ($validated['status'] === 'published' && empty($validated['published_at'])) {
-            $validated['published_at'] = now();
-        }
+        $validated['slug'] = Str::slug($validated['title']);
 
         News::create($validated);
 
-        return redirect()->route('admin.news.index')->with('success', 'News created successfully.');
+        return redirect()->route('news.index')
+            ->with('success', 'News created successfully.');
     }
 
+    /**
+     * Show the form for editing the specified news article.
+     */
     public function edit(News $news)
     {
-        $categories = News::distinct()->pluck('category');
+        // Fetch existing categories to provide suggestions
+        $categories = News::distinct()->pluck('category')->filter()->values();
+
         return Inertia::render('Admin/News/Edit', [
             'news' => $news,
             'categories' => $categories
         ]);
     }
 
+    /**
+     * Update the specified news article in storage.
+     */
     public function update(Request $request, News $news)
     {
         $validated = $request->validate([
             'title' => 'required|string|max:255',
-            'category' => 'required|string|max:255',
             'content' => 'required|string',
+            'category' => 'required|string|max:100',
             'thumbnail' => 'nullable|image|max:2048',
             'pdf_file' => 'nullable|mimes:pdf|max:10240',
-            'status' => 'required|in:draft,published',
-            'published_at' => 'nullable|date',
+            'is_published' => 'boolean',
         ]);
 
         if ($request->hasFile('thumbnail')) {
             if ($news->thumbnail) {
                 Storage::disk('public')->delete($news->thumbnail);
             }
-            $path = $request->file('thumbnail')->store('news/thumbnails', 'public');
-            $validated['thumbnail'] = $path;
+            $validated['thumbnail'] = $request->file('thumbnail')->store('news/thumbnails', 'public');
         }
 
         if ($request->hasFile('pdf_file')) {
             if ($news->pdf_file) {
                 Storage::disk('public')->delete($news->pdf_file);
             }
-            $path = $request->file('pdf_file')->store('news/pdfs', 'public');
-            $validated['pdf_file'] = $path;
+            $validated['pdf_file'] = $request->file('pdf_file')->store('news/pdfs', 'public');
         }
 
-        if ($validated['status'] === 'published' && empty($validated['published_at'])) {
-            $validated['published_at'] = now();
-        }
+        $validated['slug'] = Str::slug($validated['title']);
 
         $news->update($validated);
 
-        return redirect()->route('admin.news.index')->with('success', 'News updated successfully.');
+        return redirect()->route('news.index')
+            ->with('success', 'News updated successfully.');
     }
 
+    /**
+     * Remove the specified news article from storage.
+     */
     public function destroy(News $news)
     {
         if ($news->thumbnail) {
@@ -133,6 +138,7 @@ class NewsController extends Controller
 
         $news->delete();
 
-        return redirect()->route('admin.news.index')->with('success', 'News deleted successfully.');
+        return redirect()->route('news.index')
+            ->with('success', 'News deleted successfully.');
     }
 }
