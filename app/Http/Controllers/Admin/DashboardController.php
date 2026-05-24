@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Models\News;
 use App\Models\Gallery;
 use App\Models\Program;
+use App\Models\User;
+use App\Models\NewsletterSubscriber;
 use Inertia\Inertia;
 
 class DashboardController extends Controller
@@ -17,6 +19,8 @@ class DashboardController extends Controller
                 'news_count' => News::count(),
                 'programs_count' => Program::count(),
                 'galleries_count' => Gallery::count(),
+                'users_count' => User::count(),
+                'subscribers_count' => NewsletterSubscriber::count(),
             ],
             'recentNews' => News::latest()->take(3)->get()
         ]);
