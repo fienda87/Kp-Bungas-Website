@@ -22,11 +22,18 @@ class NewsController extends Controller
             $query->where('title', 'like', '%' . $request->search . '%');
         }
 
+        if ($request->has('category') && $request->category !== '') {
+            $query->where('category', $request->category);
+        }
+
         $news = $query->latest()->paginate(10)->withQueryString();
+
+        $categories = News::distinct()->pluck('category')->filter()->values();
 
         return Inertia::render('Admin/News/Index', [
             'news' => $news,
-            'filters' => $request->only(['search']),
+            'categories' => $categories,
+            'filters' => $request->only(['search', 'category']),
         ]);
     }
 
