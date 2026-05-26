@@ -4,12 +4,21 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Program;
+use App\Services\ProgramService;
+use App\Http\Requests\StoreProgramRequest;
+use App\Http\Requests\UpdateProgramRequest;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 
 class ProgramController extends Controller
 {
+    protected $programService;
+
+    public function __construct(ProgramService $programService)
+    {
+        $this->programService = $programService;
+    }
+
     public function index()
     {
         return Inertia::render('Admin/Programs/Index', [
@@ -17,56 +26,38 @@ class ProgramController extends Controller
         ]);
     }
 
-    public function store(Request $request)
+    public function store(StoreProgramRequest $request)
     {
-        $validated = $request->validate([
-            'title' => 'required|string|max:255',
-            'description' => 'required|string',
-            'is_active' => 'required|boolean',
-            'order' => 'required|integer',
-            'icon' => 'nullable|string',
-            'image' => 'nullable|image|max:2048',
-        ]);
-
-        if ($request->hasFile('image')) {
-            $validated['image'] = $request->file('image')->store('programs', 'public');
-        }
-
-        Program::create($validated);
+        $this->programService->createProgram(
+            $request->validated(),
+            $request->file('image')
+        );
 
         return redirect()->route('admin.programs.index')->with('success', 'Program created successfully.');
     }
 
-    public function update(Request $request, Program $program)
+    public function update(UpdateProgramRequest $request, Program $program)
     {
-        $validated = $request->validate([
-            'title' => 'required|string|max:255',
-            'description' => 'required|string',
-            'is_active' => 'required|boolean',
-            'order' => 'required|integer',
-            'icon' => 'nullable|string',
-            'image' => 'nullable|image|max:2048',
-        ]);
-
-        if ($request->hasFile('image')) {
-            if ($program->image) {
-                Storage::disk('public')->delete($program->image);
-            }
-            $validated['image'] = $request->file('image')->store('programs', 'public');
-        }
-
-        $program->update($validated);
+        $this->programService->updateProgram(
+            $program,
+            $request->validated(),
+            $request->file('image')
+        );
 
         return redirect()->route('admin.programs.index')->with('success', 'Program updated successfully.');
     }
 
     public function destroy(Program $program)
     {
-        if ($program->image) {
-            Storage::disk('public')->delete($program->image);
-        }
-        $program->delete();
+        $this->programService->deleteProgram($program);
 
         return redirect()->route('admin.programs.index')->with('success', 'Program deleted successfully.');
+    }
+
+    public function reorder(Request $request)
+    {
+        $this->programService->reorderPrograms($request->input('programs', []));
+
+        return redirect()->back()->with('success', 'Programs reordered successfully.');
     }
 }
