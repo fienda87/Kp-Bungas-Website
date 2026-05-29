@@ -1,22 +1,23 @@
 <script setup>
-import ApplicationLogo from '@/Components/ApplicationLogo.vue';
 import { Link } from '@inertiajs/vue3';
+
+const logoUrl = '/images/program/logo.png';
 </script>
 
 <template>
-    <div
-        class="flex min-h-screen flex-col items-center bg-gray-100 pt-6 sm:justify-center sm:pt-0"
-    >
-        <div>
-            <Link href="/">
-                <ApplicationLogo class="h-20 w-20 fill-current text-gray-500" />
+    <div class="min-h-screen bg-gradient-to-br from-slate-100 via-slate-50 to-neutral-200 text-slate-900">
+        <div class="mx-auto flex min-h-screen w-full max-w-6xl flex-col items-center justify-center gap-8 px-6 py-10">
+            <Link href="/" class="flex items-center gap-4">
+                <img :src="logoUrl" alt="Kampung Bungas" class="h-16 w-16 rounded-full bg-white p-1 shadow" />
+                <div class="leading-tight">
+                    <p class="text-xl font-semibold">Kampung Bungas</p>
+                    <p class="text-sm font-medium text-emerald-600">Buah • Bunga • Sayur</p>
+                </div>
             </Link>
-        </div>
 
-        <div
-            class="mt-6 w-full overflow-hidden bg-white px-6 py-4 shadow-md sm:max-w-md sm:rounded-lg"
-        >
-            <slot />
+            <div class="w-full max-w-xl rounded-2xl bg-white/90 p-10 text-slate-900 shadow-2xl backdrop-blur">
+                <slot />
+            </div>
         </div>
     </div>
 </template>

@@ -98,10 +98,36 @@ class ProgramTest extends TestCase
         Storage::disk('public')->assertMissing('programs/old.jpg');
     }
 
+    public function test_admin_can_reorder_programs()
+    {
+        $first = Program::factory()->create(['order' => 1]);
+        $second = Program::factory()->create(['order' => 2]);
+
+        $response = $this->actingAs($this->admin)->post(route('admin.programs.reorder'), [
+            'programs' => [
+                ['id' => $first->id, 'order' => 2],
+                ['id' => $second->id, 'order' => 1],
+            ],
+        ]);
+
+        $response->assertRedirect();
+        $this->assertDatabaseHas('programs', ['id' => $first->id, 'order' => 2]);
+        $this->assertDatabaseHas('programs', ['id' => $second->id, 'order' => 1]);
+    }
+
     public function test_non_admin_cannot_access_programs()
     {
         $user = User::factory()->create();
         $response = $this->actingAs($user)->get(route('admin.programs.index'));
+        $response->assertStatus(403);
+    }
+
+    public function test_user_without_role_gets_forbidden_instead_of_runtime_error()
+    {
+        $user = User::factory()->create(['role_id' => null]);
+
+        $response = $this->actingAs($user)->get(route('admin.programs.index'));
+
         $response->assertStatus(403);
     }
 }

@@ -93,6 +93,57 @@ class GalleryTest extends TestCase
         
         $photo = GalleryPhoto::first();
         Storage::disk('public')->assertExists($photo->image_path);
+        $this->assertSame(1, $photo->order);
+    }
+
+    public function test_admin_can_update_photo_caption()
+    {
+        $photo = GalleryPhoto::factory()->create(['caption' => null]);
+
+        $response = $this->actingAs($this->admin)->patch(route('admin.galleries.photos.caption', $photo), [
+            'caption' => 'Kegiatan panen bersama',
+        ]);
+
+        $response->assertRedirect();
+        $this->assertDatabaseHas('gallery_photos', [
+            'id' => $photo->id,
+            'caption' => 'Kegiatan panen bersama',
+        ]);
+    }
+
+    public function test_admin_can_reorder_gallery_photos()
+    {
+        $gallery = Gallery::factory()->create();
+        $first = GalleryPhoto::factory()->create(['gallery_id' => $gallery->id, 'order' => 1]);
+        $second = GalleryPhoto::factory()->create(['gallery_id' => $gallery->id, 'order' => 2]);
+
+        $response = $this->actingAs($this->admin)->post(route('admin.galleries.photos.reorder', $gallery), [
+            'photos' => [
+                ['id' => $first->id, 'order' => 2],
+                ['id' => $second->id, 'order' => 1],
+            ],
+        ]);
+
+        $response->assertRedirect();
+        $this->assertDatabaseHas('gallery_photos', ['id' => $first->id, 'order' => 2]);
+        $this->assertDatabaseHas('gallery_photos', ['id' => $second->id, 'order' => 1]);
+    }
+
+    public function test_admin_can_set_gallery_cover_from_photo()
+    {
+        $gallery = Gallery::factory()->create(['cover_image' => null]);
+        $photo = GalleryPhoto::factory()->create([
+            'gallery_id' => $gallery->id,
+            'image_path' => 'galleries/photos/cover-source.jpg',
+        ]);
+
+        $response = $this->actingAs($this->admin)->post(route('admin.galleries.cover.from-photo', [$gallery, $photo]));
+
+        $response->assertRedirect();
+        $this->assertDatabaseHas('galleries', [
+            'id' => $gallery->id,
+            'cover_image' => 'galleries/photos/cover-source.jpg',
+        ]);
     }
 
     public function test_admin_can_delete_photo()
@@ -106,6 +157,32 @@ class GalleryTest extends TestCase
         $response->assertRedirect();
         $this->assertDatabaseMissing('gallery_photos', ['id' => $photo->id]);
         Storage::disk('public')->assertMissing('galleries/photos/test.jpg');
+    }
+
+    public function test_deleting_cover_photo_moves_cover_to_next_photo()
+    {
+        Storage::fake('public');
+        $gallery = Gallery::factory()->create(['cover_image' => 'galleries/photos/cover.jpg']);
+        $cover = GalleryPhoto::factory()->create([
+            'gallery_id' => $gallery->id,
+            'image_path' => 'galleries/photos/cover.jpg',
+            'order' => 1,
+        ]);
+        $replacement = GalleryPhoto::factory()->create([
+            'gallery_id' => $gallery->id,
+            'image_path' => 'galleries/photos/replacement.jpg',
+            'order' => 2,
+        ]);
+        Storage::disk('public')->put($cover->image_path, 'fake content');
+        Storage::disk('public')->put($replacement->image_path, 'fake content');
+
+        $response = $this->actingAs($this->admin)->delete(route('admin.galleries.photos.destroy', $cover));
+
+        $response->assertRedirect();
+        $this->assertDatabaseHas('galleries', [
+            'id' => $gallery->id,
+            'cover_image' => $replacement->image_path,
+        ]);
     }
 
     public function test_admin_can_delete_gallery_and_its_photos()

@@ -18,8 +18,11 @@ class PageController extends Controller
             ->take(3)
             ->get();
 
+        $programs = Program::where('is_active', true)->orderBy('order')->take(4)->get();
+
         return Inertia::render('Home', [
-            'featuredNews' => NewsResource::collection($featuredNews)
+            'featuredNews' => NewsResource::collection($featuredNews),
+            'programs' => $programs
         ]);
     }
 
@@ -63,24 +66,30 @@ class PageController extends Controller
     {
         $query = News::where('status', 'published');
 
-        if ($request->has('search')) {
-            $search = $request->search;
-            $query->where(function($q) use ($search) {
+        if ($request->filled('search')) {
+            $search = trim((string) $request->search);
+            $query->where(function ($q) use ($search) {
                 $q->where('title', 'like', "%{$search}%")
                   ->orWhere('content', 'like', "%{$search}%");
             });
         }
 
-        if ($request->has('category')) {
-            $categories = explode(',', $request->category);
+        if ($request->filled('category')) {
+            $categories = array_filter(explode(',', (string) $request->category));
             $query->whereIn('category', $categories);
         }
 
-        $news = $query->orderBy('published_at', 'desc')->paginate(9);
+        $news = $query->orderBy('published_at', 'desc')->paginate(9)->withQueryString();
 
         return Inertia::render('News/Index', [
             'news' => NewsResource::collection($news),
-            'categories' => News::where('status', 'published')->distinct()->pluck('category'),
+            'categories' => News::where('status', 'published')
+                ->whereNotNull('category')
+                ->where('category', '!=', '')
+                ->orderBy('category')
+                ->distinct()
+                ->pluck('category')
+                ->values(),
             'filters' => $request->only(['search', 'category'])
         ]);
     }

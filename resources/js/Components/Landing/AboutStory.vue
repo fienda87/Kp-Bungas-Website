@@ -30,6 +30,7 @@ const paragraphs = [
                         :src="storyImage"
                         alt="Warga Kampung Bungas bergotong royong merawat area hijau"
                         class="h-auto w-full rounded-2xl object-cover shadow-[0_25px_50px_-12px_rgba(0,0,0,0.25)]"
+                        loading="lazy"
                     />
                 </div>
 
@@ -53,7 +54,7 @@ const paragraphs = [
                             :key="stat.label"
                             class="rounded-[14px] bg-white px-4 pb-5 pt-4 text-center shadow-[0_4px_6px_rgba(0,0,0,0.1),0_2px_4px_rgba(0,0,0,0.1)]"
                         >
-                            <img :src="stat.icon" alt="" class="mx-auto h-8 w-8" aria-hidden="true" />
+                            <img :src="stat.icon" alt="" class="mx-auto h-8 w-8" aria-hidden="true" loading="lazy" />
                             <p class="mt-2 text-2xl font-bold leading-8 text-[#101828]">{{ stat.value }}</p>
                             <p class="mt-1 text-sm leading-5 text-[#4a5565]">{{ stat.label }}</p>
                         </div>

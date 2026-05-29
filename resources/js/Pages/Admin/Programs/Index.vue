@@ -11,6 +11,7 @@ import SecondaryButton from '@/Components/SecondaryButton.vue';
 import InputLabel from '@/Components/InputLabel.vue';
 import TextInput from '@/Components/TextInput.vue';
 import InputError from '@/Components/InputError.vue';
+import FileUpload from '@/Components/Admin/FileUpload.vue';
 
 const props = defineProps({
     programs: Array,
@@ -24,6 +25,9 @@ const showConfirmModal = ref(false);
 const itemToDelete = ref(null);
 const toastMessage = ref('');
 const toastType = ref('success');
+const reorderLoading = ref(false);
+const deleting = ref(false);
+const uploadError = ref('');
 
 const form = useForm({
     title: '',
@@ -40,6 +44,7 @@ const resetForm = () => {
     form.is_active = true;
     form.order = 0;
     form.image = null;
+    uploadError.value = '';
 };
 
 const openCreateModal = () => {
@@ -60,30 +65,44 @@ const openEditModal = (program) => {
     form.order = program.order;
     form.image = null;
     form.clearErrors();
+    uploadError.value = '';
     showFormModal.value = true;
 };
 
-const handleImageChange = (event) => {
-    form.image = event.target.files[0] || null;
+const setUploadError = (message) => {
+    uploadError.value = message;
 };
 
 const submitForm = () => {
+    if (uploadError.value) {
+        showToast('Periksa kembali file gambar program.', 'error');
+        return;
+    }
+
     if (isEditing.value && editingProgram.value) {
-        form.post(route('admin.programs.update', editingProgram.value.id), {
+        form.transform((data) => ({
+            ...data,
             _method: 'put',
+        })).post(route('admin.programs.update', editingProgram.value.id), {
             forceFormData: true,
             onSuccess: () => {
                 showFormModal.value = false;
                 showToast('Program berhasil diperbarui');
             },
+            onError: () => {
+                showToast('Terjadi kesalahan saat memperbarui program', 'error');
+            },
             preserveScroll: true,
         });
     } else {
-        form.post(route('admin.programs.store'), {
+        form.transform((data) => data).post(route('admin.programs.store'), {
             forceFormData: true,
             onSuccess: () => {
                 showFormModal.value = false;
                 showToast('Program berhasil ditambahkan');
+            },
+            onError: () => {
+                showToast('Terjadi kesalahan saat menambahkan program', 'error');
             },
             preserveScroll: true,
         });
@@ -93,6 +112,7 @@ const submitForm = () => {
 const closeModal = () => {
     showFormModal.value = false;
     resetForm();
+    uploadError.value = '';
 };
 
 const confirmDelete = (item) => {
@@ -101,23 +121,31 @@ const confirmDelete = (item) => {
 };
 
 const deleteProgram = () => {
+    deleting.value = true;
     router.delete(route('admin.programs.destroy', itemToDelete.value.id), {
         onSuccess: () => {
             showConfirmModal.value = false;
             itemToDelete.value = null;
             showToast('Program berhasil dihapus');
         },
+        onError: () => {
+            showToast('Terjadi kesalahan saat menghapus program', 'error');
+        },
+        onFinish: () => {
+            deleting.value = false;
+        },
         preserveScroll: true,
     });
 };
 
 const moveUp = (index) => {
-    if (index <= 0) return;
+    if (index <= 0 || reorderLoading.value) return;
     const programsCopy = [...props.programs];
     const reorderData = programsCopy.map((p, i) => ({
         id: p.id,
         order: i === index ? index : i === index - 1 ? index + 1 : i + 1,
     }));
+    reorderLoading.value = true;
     router.post(route('admin.programs.reorder'), {
         programs: reorderData,
     }, {
@@ -125,22 +153,35 @@ const moveUp = (index) => {
         onSuccess: () => {
             showToast('Urutan program berhasil diubah');
         },
+        onError: () => {
+            showToast('Terjadi kesalahan saat mengubah urutan program', 'error');
+        },
+        onFinish: () => {
+            reorderLoading.value = false;
+        },
     });
 };
 
 const moveDown = (index) => {
-    if (index >= props.programs.length - 1) return;
+    if (index >= props.programs.length - 1 || reorderLoading.value) return;
     const programsCopy = [...props.programs];
     const reorderData = programsCopy.map((p, i) => ({
         id: p.id,
         order: i === index ? index + 2 : i === index + 1 ? index + 1 : i + 1,
     }));
+    reorderLoading.value = true;
     router.post(route('admin.programs.reorder'), {
         programs: reorderData,
     }, {
         preserveScroll: true,
         onSuccess: () => {
             showToast('Urutan program berhasil diubah');
+        },
+        onError: () => {
+            showToast('Terjadi kesalahan saat mengubah urutan program', 'error');
+        },
+        onFinish: () => {
+            reorderLoading.value = false;
         },
     });
 };
@@ -235,11 +276,11 @@ watch(() => page.props.flash?.error, (message) => {
                                             <span class="mr-1">{{ program.order }}</span>
                                             <button
                                                 @click="moveUp(index)"
-                                                :disabled="index === 0"
                                                 :class="[
                                                     'p-1 rounded hover:bg-gray-100 focus:outline-none',
-                                                    index === 0 ? 'text-gray-300 cursor-not-allowed' : 'text-gray-600 hover:text-gray-900'
+                                                    index === 0 || reorderLoading ? 'text-gray-300 cursor-not-allowed' : 'text-gray-600 hover:text-gray-900'
                                                 ]"
+                                                :disabled="index === 0 || reorderLoading"
                                                 title="Naik"
                                             >
                                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -248,11 +289,11 @@ watch(() => page.props.flash?.error, (message) => {
                                             </button>
                                             <button
                                                 @click="moveDown(index)"
-                                                :disabled="index === programs.length - 1"
                                                 :class="[
                                                     'p-1 rounded hover:bg-gray-100 focus:outline-none',
-                                                    index === programs.length - 1 ? 'text-gray-300 cursor-not-allowed' : 'text-gray-600 hover:text-gray-900'
+                                                    index === programs.length - 1 || reorderLoading ? 'text-gray-300 cursor-not-allowed' : 'text-gray-600 hover:text-gray-900'
                                                 ]"
+                                                :disabled="index === programs.length - 1 || reorderLoading"
                                                 title="Turun"
                                             >
                                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -337,19 +378,16 @@ watch(() => page.props.flash?.error, (message) => {
                     <!-- Image -->
                     <div>
                         <InputLabel for="image" value="Gambar" />
-                        <input
-                            id="image"
-                            type="file"
+                        <FileUpload
+                            v-model="form.image"
                             accept="image/*"
-                            @change="handleImageChange"
-                            class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
+                            :max-size-mb="5"
+                            helper-text="JPG, PNG, GIF, WEBP hingga 5MB"
+                            :preview-url="isEditing ? editingProgram?.image_url : ''"
+                            preview
+                            :error="uploadError || form.errors.image"
+                            @validation-error="setUploadError"
                         />
-                        <img
-                            v-if="isEditing && editingProgram?.image_url && !form.image"
-                            :src="editingProgram.image_url"
-                            class="mt-2 h-20 w-20 object-cover rounded"
-                        />
-                        <InputError :message="form.errors.image" />
                     </div>
 
                     <!-- Order -->
@@ -393,6 +431,7 @@ watch(() => page.props.flash?.error, (message) => {
         <!-- Delete Confirmation -->
         <ConfirmModal
             :show="showConfirmModal"
+            :loading="deleting"
             title="Hapus Program?"
             :message="`Apakah Anda yakin ingin menghapus program ${itemToDelete?.title || ''}?`"
             @confirm="deleteProgram"

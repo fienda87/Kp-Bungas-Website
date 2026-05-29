@@ -1,16 +1,23 @@
 <script setup>
+import { computed } from 'vue';
 import { Link } from '@inertiajs/vue3';
+import { usePage } from '@inertiajs/vue3';
 import { useUIStore } from '../../Stores/uiStore';
 
 const uiStore = useUIStore();
+const page = usePage();
+
+const settings = computed(() => page.props.settings || {});
+const siteName = computed(() => settings.value.site_name || 'Kampung Bungas');
+const siteTagline = computed(() => settings.value.site_tagline || 'Buah • Bunga • Sayur');
 
 const navItems = [
-    { label: 'Tentang', href: '/about' },
-    { label: 'Program', href: '/program' },
-    { label: 'Perjalanan', href: '/perjalanan' },
-    { label: 'Dampak', href: '/dampak' },
-    { label: 'Galeri', href: '/galeri' },
-    { label: 'Berita Artikel', href: '#berita' },
+    { label: 'Tentang', href: route('about') },
+    { label: 'Program', href: route('program') },
+    { label: 'Perjalanan', href: route('perjalanan') },
+    { label: 'Dampak', href: route('dampak') },
+    { label: 'Galeri', href: route('galeri') },
+    { label: 'Berita Artikel', href: route('news.index') },
 ];
 
 const logoUrl = '/images/program/logo.png';
@@ -19,11 +26,11 @@ const logoUrl = '/images/program/logo.png';
 <template>
     <header class="sticky top-0 z-40 border-b border-slate-100 bg-white/95 backdrop-blur">
         <div class="mx-auto flex h-20 w-full max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-            <Link href="/" class="flex items-center gap-3">
+            <Link href="/" class="flex items-center gap-3 select-none">
                 <img :src="logoUrl" alt="Kampung Bungas" class="h-12 w-12 object-contain" />
                 <div class="leading-tight">
-                    <p class="text-lg font-bold text-slate-900">Kampung Bungas</p>
-                    <p class="text-xs font-medium text-emerald-500">Buah • Bunga • Sayur</p>
+                    <p class="text-lg font-bold text-slate-900">{{ siteName }}</p>
+                    <p class="text-xs font-medium text-emerald-500">{{ siteTagline }}</p>
                 </div>
             </Link>
 
@@ -38,7 +45,7 @@ const logoUrl = '/images/program/logo.png';
                     {{ item.label }}
                 </Link>
                 <Link
-                    href="/kunjungi-kami"
+                    :href="route('kunjungi-kami')"
                     class="rounded-full bg-emerald-600 px-6 py-3 text-base font-semibold text-white transition hover:bg-emerald-700"
                 >
                     Kunjungi Kami
@@ -47,7 +54,7 @@ const logoUrl = '/images/program/logo.png';
 
             <div class="flex items-center gap-4 lg:hidden">
                 <Link
-                    href="/kunjungi-kami"
+                    :href="route('kunjungi-kami')"
                     class="rounded-full bg-emerald-600 px-4 py-2 text-sm font-semibold text-white"
                 >
                     Kunjungi

@@ -1,8 +1,19 @@
 <script setup>
-import { useProgramStore } from '../../Stores/programStore';
 import ProgramCard from './ProgramCard.vue';
 
-const programStore = useProgramStore();
+defineProps({
+    programs: {
+        type: Array,
+        default: () => [],
+    }
+});
+
+const defaultGradients = [
+    'linear-gradient(135deg, rgb(43, 127, 255) 0%, rgb(0, 184, 219) 100%)',
+    'linear-gradient(135deg, rgb(254, 154, 0) 0%, rgb(255, 105, 0) 100%)',
+    'linear-gradient(135deg, rgb(173, 70, 255) 0%, rgb(246, 51, 154) 100%)',
+    'linear-gradient(135deg, rgb(0, 201, 80) 0%, rgb(0, 188, 125) 100%)',
+];
 </script>
 
 <template>
@@ -24,13 +35,13 @@ const programStore = useProgramStore();
             <!-- Programs Grid -->
             <div class="mt-20 grid gap-8 md:grid-cols-2 md:gap-10 lg:mt-24 lg:gap-12">
                 <ProgramCard
-                    v-for="program in programStore.programs"
+                    v-for="(program, index) in programs"
                     :key="program.id"
                     :title="program.title"
                     :description="program.description"
-                    :image="program.image"
+                    :image="program.image_url"
                     :icon="program.icon"
-                    :icon-gradient="program.iconGradient"
+                    :icon-gradient="defaultGradients[index % defaultGradients.length]"
                 />
             </div>
         </div>

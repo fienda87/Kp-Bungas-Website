@@ -24,7 +24,7 @@ class StoreGalleryRequest extends FormRequest
         return [
             'album_name' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
-            'cover_image' => ['nullable', 'image', 'max:2048'],
+            'cover_image' => ['nullable', 'image', 'mimes:jpeg,png,jpg,webp', 'max:5120', 'dimensions:min_width=200,min_height=200'],
         ];
     }
 }

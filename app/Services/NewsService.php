@@ -9,12 +9,18 @@ use Illuminate\Support\Facades\Storage;
 
 class NewsService
 {
+    protected $imageService;
+
+    public function __construct(ImageService $imageService)
+    {
+        $this->imageService = $imageService;
+    }
     public function createNews(array $data, ?UploadedFile $thumbnail, ?UploadedFile $pdfFile): News
     {
         $data['slug'] = Str::slug($data['title']) . '-' . rand(1000, 9999);
         
         if ($thumbnail) {
-            $data['thumbnail'] = $thumbnail->store('news/thumbnails', 'public');
+            $data['thumbnail'] = $this->imageService->processAndStore($thumbnail, 'news/thumbnails', 1200, 80);
         }
         if ($pdfFile) {
             $data['pdf_file'] = $pdfFile->store('news/pdfs', 'public');
@@ -32,7 +38,7 @@ class NewsService
             if ($news->thumbnail) {
                 Storage::disk('public')->delete($news->thumbnail);
             }
-            $data['thumbnail'] = $thumbnail->store('news/thumbnails', 'public');
+            $data['thumbnail'] = $this->imageService->processAndStore($thumbnail, 'news/thumbnails', 1200, 80);
         }
         if ($pdfFile) {
             if ($news->pdf_file) {

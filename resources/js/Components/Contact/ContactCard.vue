@@ -44,6 +44,7 @@ defineProps({
                             {{ line }}
                         </p>
                     </div>
+                    <slot />
                 </div>
             </div>
         </div>

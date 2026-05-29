@@ -4,7 +4,7 @@ import AdminLayout from '@/Layouts/AdminLayout.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import FileUpload from '@/Components/Admin/FileUpload.vue';
 import ToastNotification from '@/Components/Admin/ToastNotification.vue';
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 import { QuillEditor } from '@vueup/vue-quill';
 import '@vueup/vue-quill/dist/vue-quill.snow.css';
 
@@ -14,6 +14,10 @@ const props = defineProps({
 
 const toastMessage = ref('');
 const toastType = ref('success');
+const uploadErrors = ref({
+    thumbnail: '',
+    pdf_file: '',
+});
 
 const form = useForm({
     title: '',
@@ -25,10 +29,27 @@ const form = useForm({
     published_at: null,
 });
 
-const submit = () => {
+const thumbnailError = computed(() => uploadErrors.value.thumbnail || form.errors.thumbnail);
+const pdfError = computed(() => uploadErrors.value.pdf_file || form.errors.pdf_file);
+
+const setUploadError = (field, message) => {
+    uploadErrors.value[field] = message;
+};
+
+const submit = (status = null) => {
+    if (uploadErrors.value.thumbnail || uploadErrors.value.pdf_file) {
+        showToast('Periksa kembali file yang diunggah.', 'error');
+        return;
+    }
+
+    if (status) {
+        form.status = status;
+    }
+
     form.post(route('admin.news.store'), {
+        forceFormData: true,
         onSuccess: () => {
-            showToast('Berita berhasil diterbitkan');
+            showToast(form.status === 'published' ? 'Berita berhasil dipublikasikan' : 'Draft berhasil disimpan');
         },
         onError: () => {
             showToast('Terjadi kesalahan saat menyimpan berita', 'error');
@@ -60,7 +81,7 @@ const showToast = (message, type = 'success') => {
 
         <div class="py-12">
             <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-                <form @submit.prevent="submit" class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <form @submit.prevent="submit()" class="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <!-- Main Content -->
                     <div class="md:col-span-2 space-y-6">
                         <div class="bg-white p-6 rounded-lg shadow-sm">
@@ -139,13 +160,25 @@ const showToast = (message, type = 'success') => {
                                 <div v-if="form.errors.published_at" class="text-red-500 text-xs mt-1">{{ form.errors.published_at }}</div>
                             </div>
 
-                            <div class="mt-6 pt-4 border-t">
+                            <div class="mt-6 grid gap-3 border-t pt-4">
+                                <button
+                                    type="button"
+                                    class="w-full rounded-md border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                                    :disabled="form.processing"
+                                    @click="submit('draft')"
+                                >
+                                    <span v-if="form.processing && form.status === 'draft'">Menyimpan...</span>
+                                    <span v-else>Simpan Draft</span>
+                                </button>
                                 <PrimaryButton
+                                    type="button"
                                     class="w-full justify-center"
                                     :class="{ 'opacity-25': form.processing }"
                                     :disabled="form.processing"
+                                    @click="submit('published')"
                                 >
-                                    Simpan Berita
+                                    <span v-if="form.processing && form.status === 'published'">Memublikasikan...</span>
+                                    <span v-else>Publish Berita</span>
                                 </PrimaryButton>
                             </div>
                         </div>
@@ -157,9 +190,12 @@ const showToast = (message, type = 'success') => {
                                 v-model="form.thumbnail"
                                 accept="image/*"
                                 label="Pilih gambar"
+                                :max-size-mb="5"
+                                helper-text="JPG, PNG, GIF, WEBP hingga 5MB"
                                 preview
+                                :error="thumbnailError"
+                                @validation-error="setUploadError('thumbnail', $event)"
                             />
-                            <div v-if="form.errors.thumbnail" class="text-red-500 text-xs mt-1">{{ form.errors.thumbnail }}</div>
                         </div>
 
                         <!-- PDF Attachment -->
@@ -169,8 +205,11 @@ const showToast = (message, type = 'success') => {
                                 v-model="form.pdf_file"
                                 accept=".pdf"
                                 label="Pilih file PDF"
+                                :max-size-mb="10"
+                                helper-text="PDF hingga 10MB"
+                                :error="pdfError"
+                                @validation-error="setUploadError('pdf_file', $event)"
                             />
-                            <div v-if="form.errors.pdf_file" class="text-red-500 text-xs mt-1">{{ form.errors.pdf_file }}</div>
                             <p class="mt-2 text-xs text-gray-500 italic">Gunakan ini untuk berita seperti majalah atau dokumen resmi.</p>
                         </div>
                     </div>

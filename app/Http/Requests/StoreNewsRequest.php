@@ -25,7 +25,7 @@ class StoreNewsRequest extends FormRequest
             'title' => ['required', 'string', 'max:255'],
             'category' => ['required', 'string', 'max:255'],
             'content' => ['required', 'string'],
-            'thumbnail' => ['nullable', 'image', 'max:2048'],
+            'thumbnail' => ['nullable', 'image', 'mimes:jpeg,png,jpg,webp', 'max:5120', 'dimensions:min_width=200,min_height=200'],
             'pdf_file' => ['nullable', 'mimes:pdf', 'max:10240'],
             'status' => ['required', 'in:draft,published'],
             'published_at' => ['nullable', 'date'],

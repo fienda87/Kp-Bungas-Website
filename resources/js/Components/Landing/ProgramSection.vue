@@ -1,7 +1,17 @@
 <script setup>
-import { useProgramStore } from '../../Stores/programStore';
+defineProps({
+    programs: {
+        type: Array,
+        default: () => [],
+    }
+});
 
-const programStore = useProgramStore();
+const defaultGradients = [
+    'linear-gradient(135deg, rgb(43, 127, 255) 0%, rgb(0, 184, 219) 100%)',
+    'linear-gradient(135deg, rgb(254, 154, 0) 0%, rgb(255, 105, 0) 100%)',
+    'linear-gradient(135deg, rgb(173, 70, 255) 0%, rgb(246, 51, 154) 100%)',
+    'linear-gradient(135deg, rgb(0, 201, 80) 0%, rgb(0, 188, 125) 100%)',
+];
 </script>
 
 <template>
@@ -18,24 +28,37 @@ const programStore = useProgramStore();
             <!-- Programs Grid -->
             <div class="grid gap-8 md:grid-cols-2 lg:grid-cols-2">
                 <article
-                    v-for="program in programStore.programs"
+                    v-for="(program, index) in programs"
                     :key="program.id"
                     class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-md transition hover:-translate-y-2 hover:shadow-xl"
                 >
                     <!-- Program Image -->
                     <div class="relative h-48 overflow-hidden bg-slate-200">
                         <img
-                            :src="program.image"
+                            v-if="program.image_url"
+                            :src="program.image_url"
                             :alt="program.title"
                             class="h-full w-full object-cover"
                         />
+                        <div v-else class="flex h-full w-full items-center justify-center bg-slate-100 text-slate-500 font-medium">Belum ada gambar</div>
                         <div class="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
                     </div>
 
                     <!-- Program Content -->
                     <div class="p-6">
                         <div class="mb-3 flex items-center gap-3">
-                            <span class="text-4xl">{{ program.icon }}</span>
+                            <div 
+                                class="flex h-12 w-12 items-center justify-center rounded-full shadow-sm text-xl text-white"
+                                :style="{ backgroundImage: defaultGradients[index % defaultGradients.length] }"
+                            >
+                                <img
+                                    v-if="program.icon && (program.icon.includes('/') || program.icon.includes('.'))"
+                                    :src="program.icon"
+                                    :alt="`${program.title} icon`"
+                                    class="h-6 w-6 object-contain"
+                                />
+                                <span v-else>{{ program.icon || '🌱' }}</span>
+                            </div>
                         </div>
                         <h3 class="text-xl font-bold text-slate-900">{{ program.title }}</h3>
                         <p class="mt-2 text-slate-600">{{ program.description }}</p>

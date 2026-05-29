@@ -4,17 +4,28 @@ return [
     'ssr' => [
         'enabled' => false,
         'url' => 'http://127.0.0.1:13714',
+        'ensure_bundle_exists' => false,
     ],
-    'pages' => [
-        'ensure_pages_exist' => false,
-        'paths' => [
-            resource_path('js/Pages'),
-        ],
-        'extensions' => [
-            'js', 'jsx', 'svelte', 'ts', 'tsx', 'vue',
-        ],
+
+    'ensure_pages_exist' => false,
+
+    'page_paths' => [
+        resource_path('js/Pages'),
     ],
+
+    'page_extensions' => [
+        'js', 'jsx', 'svelte', 'ts', 'tsx', 'vue',
+    ],
+
+    'use_script_element_for_initial_page' => true,
+
     'testing' => [
         'ensure_pages_exist' => true,
+        'page_paths' => [
+            resource_path('js/Pages'),
+        ],
+        'page_extensions' => [
+            'js', 'jsx', 'svelte', 'ts', 'tsx', 'vue',
+        ],
     ],
 ];

@@ -107,7 +107,15 @@ php artisan migrate
 
 Pastikan command ini sukses tanpa error.
 
-## 9. Install Dependency Frontend
+## 9. Tautkan Folder Penyimpanan (Storage Link)
+
+Command ini WAJIB dijalankan agar gambar/foto yang di-upload dari panel admin bisa diakses oleh publik:
+
+```bash
+php artisan storage:link
+```
+
+## 10. Install Dependency Frontend
 
 ```bash
 npm install
@@ -267,6 +275,7 @@ npm run dev
 - [ ] database sudah dibuat
 - [ ] `php artisan key:generate` sukses
 - [ ] `php artisan migrate` sukses
+- [ ] `php artisan storage:link` sukses
 - [ ] `npm install` sukses
 - [ ] `composer run dev` berjalan
 - [ ] Website terbuka di browser

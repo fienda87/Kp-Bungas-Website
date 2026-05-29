@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\News;
+use App\Http\Resources\NewsResource;
 use App\Services\NewsService;
 use App\Http\Requests\StoreNewsRequest;
 use App\Http\Requests\UpdateNewsRequest;
@@ -23,22 +24,35 @@ class NewsController extends Controller
     {
         $query = News::query();
 
-        if ($request->has('search')) {
-            $query->where('title', 'like', '%' . $request->search . '%');
+        if ($request->filled('search')) {
+            $search = trim((string) $request->search);
+            $query->where(function ($q) use ($search) {
+                $q->where('title', 'like', '%' . $search . '%')
+                    ->orWhere('content', 'like', '%' . $search . '%');
+            });
         }
 
-        if ($request->has('category') && $request->category !== '') {
+        if ($request->filled('category')) {
             $query->where('category', $request->category);
+        }
+
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
         }
 
         $news = $query->orderBy('created_at', 'desc')->paginate(10)->withQueryString();
 
-        $categories = News::distinct()->pluck('category');
+        $categories = News::whereNotNull('category')
+            ->where('category', '!=', '')
+            ->orderBy('category')
+            ->distinct()
+            ->pluck('category')
+            ->values();
 
         return Inertia::render('Admin/News/Index', [
             'news' => $news,
             'categories' => $categories,
-            'filters' => $request->only(['search', 'category'])
+            'filters' => $request->only(['search', 'category', 'status'])
         ]);
     }
 
@@ -65,7 +79,7 @@ class NewsController extends Controller
     {
         $categories = News::distinct()->pluck('category');
         return Inertia::render('Admin/News/Edit', [
-            'news' => $news,
+            'news' => new NewsResource($news),
             'categories' => $categories
         ]);
     }

@@ -38,6 +38,23 @@ class NewsTest extends TestCase
         );
     }
 
+    public function test_admin_can_filter_news_by_status()
+    {
+        News::factory()->count(2)->create(['status' => 'draft']);
+        News::factory()->count(3)->create(['status' => 'published']);
+
+        $response = $this->actingAs($this->admin)->get(route('admin.news.index', [
+            'status' => 'draft',
+        ]));
+
+        $response->assertStatus(200);
+        $response->assertInertia(fn ($page) => $page
+            ->component('Admin/News/Index')
+            ->where('filters.status', 'draft')
+            ->has('news.data', 2)
+        );
+    }
+
     public function test_admin_can_create_news_with_files()
     {
         Storage::fake('public');

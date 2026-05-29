@@ -9,6 +9,8 @@ use App\Services\GalleryService;
 use App\Http\Requests\StoreGalleryRequest;
 use App\Http\Requests\UpdateGalleryRequest;
 use App\Http\Requests\UploadGalleryPhotosRequest;
+use App\Http\Requests\ReorderGalleryPhotosRequest;
+use App\Http\Requests\UpdateGalleryPhotoCaptionRequest;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -21,17 +23,28 @@ class GalleryController extends Controller
         $this->galleryService = $galleryService;
     }
 
-    public function index()
+    public function index(Request $request)
     {
+        $query = Gallery::withCount('photos')->latest();
+
+        if ($request->filled('search')) {
+            $search = trim((string) $request->search);
+            $query->where(function ($q) use ($search) {
+                $q->where('album_name', 'like', "%{$search}%")
+                    ->orWhere('description', 'like', "%{$search}%");
+            });
+        }
+
         return Inertia::render('Admin/Galleries/Index', [
-            'galleries' => Gallery::withCount('photos')->latest()->get()
+            'galleries' => $query->get(),
+            'filters' => $request->only(['search']),
         ]);
     }
 
     public function show(Gallery $gallery)
     {
         return Inertia::render('Admin/Galleries/Show', [
-            'gallery' => $gallery->load('photos')
+            'gallery' => $gallery->load(['photos' => fn ($query) => $query->orderBy('order')->orderBy('id')])
         ]);
     }
 
@@ -75,5 +88,26 @@ class GalleryController extends Controller
         $this->galleryService->deletePhoto($photo);
 
         return redirect()->back()->with('success', 'Photo deleted successfully.');
+    }
+
+    public function updatePhotoCaption(UpdateGalleryPhotoCaptionRequest $request, GalleryPhoto $photo)
+    {
+        $this->galleryService->updatePhotoCaption($photo, $request->validated('caption'));
+
+        return redirect()->back()->with('success', 'Caption updated successfully.');
+    }
+
+    public function reorderPhotos(ReorderGalleryPhotosRequest $request, Gallery $gallery)
+    {
+        $this->galleryService->reorderPhotos($gallery, $request->validated('photos'));
+
+        return redirect()->back()->with('success', 'Photo order updated successfully.');
+    }
+
+    public function setCoverFromPhoto(Gallery $gallery, GalleryPhoto $photo)
+    {
+        $this->galleryService->setCoverFromPhoto($gallery, $photo);
+
+        return redirect()->back()->with('success', 'Gallery cover updated successfully.');
     }
 }

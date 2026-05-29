@@ -5,9 +5,9 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Program;
 use App\Services\ProgramService;
+use App\Http\Requests\ReorderProgramsRequest;
 use App\Http\Requests\StoreProgramRequest;
 use App\Http\Requests\UpdateProgramRequest;
-use Illuminate\Http\Request;
 use Inertia\Inertia;
 
 class ProgramController extends Controller
@@ -54,9 +54,9 @@ class ProgramController extends Controller
         return redirect()->route('admin.programs.index')->with('success', 'Program deleted successfully.');
     }
 
-    public function reorder(Request $request)
+    public function reorder(ReorderProgramsRequest $request)
     {
-        $this->programService->reorderPrograms($request->input('programs', []));
+        $this->programService->reorderPrograms($request->validated('programs'));
 
         return redirect()->back()->with('success', 'Programs reordered successfully.');
     }

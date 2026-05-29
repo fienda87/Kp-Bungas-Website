@@ -6,9 +6,13 @@ import SecondaryButton from '@/Components/SecondaryButton.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import ConfirmModal from '@/Components/Admin/ConfirmModal.vue';
 import ToastNotification from '@/Components/Admin/ToastNotification.vue';
+import AdminEmptyState from '@/Components/Admin/AdminEmptyState.vue';
+import AdminSectionCard from '@/Components/Admin/AdminSectionCard.vue';
+import AdminStatusBadge from '@/Components/Admin/AdminStatusBadge.vue';
+import { validateSelectedFile } from '@/utils/file';
 
 const props = defineProps({
-    gallery: Object
+    gallery: Object,
 });
 
 const page = usePage();
@@ -17,33 +21,57 @@ const photoToDelete = ref(null);
 const toastMessage = ref('');
 const toastType = ref('success');
 const imagePreviews = ref([]);
+const fileError = ref('');
+const actionLoading = ref(null);
+const captionDrafts = ref(Object.fromEntries((props.gallery.photos || []).map((photo) => [photo.id, photo.caption || ''])));
 
 const uploadForm = useForm({
-    photos: []
+    photos: [],
 });
 
-const handleFileChange = (e) => {
-    const files = Array.from(e.target.files);
-    uploadForm.photos = files;
-    
-    // Create previews
+const captionForm = useForm({
+    caption: '',
+});
+
+const handleFileChange = (event) => {
+    const files = Array.from(event.target.files || []);
+    fileError.value = '';
     imagePreviews.value = [];
-    files.forEach(file => {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            imagePreviews.value.push(e.target.result);
-        };
-        reader.readAsDataURL(file);
-    });
+
+    const invalidFile = files.find((file) => validateSelectedFile(file, 'image/*', 5));
+    if (invalidFile) {
+        fileError.value = validateSelectedFile(invalidFile, 'image/*', 5);
+        uploadForm.photos = [];
+        event.target.value = '';
+        return;
+    }
+
+    uploadForm.photos = files;
+    imagePreviews.value = files.map((file) => ({
+        name: file.name,
+        url: URL.createObjectURL(file),
+    }));
+};
+
+const resetUpload = () => {
+    uploadForm.reset();
+    imagePreviews.value = [];
+    fileError.value = '';
 };
 
 const submitUpload = () => {
+    if (!uploadForm.photos.length) {
+        fileError.value = 'Pilih minimal satu foto.';
+        return;
+    }
+
     uploadForm.post(route('admin.galleries.photos.upload', props.gallery.id), {
+        forceFormData: true,
         onSuccess: () => {
-            uploadForm.reset();
-            imagePreviews.value = [];
+            resetUpload();
             showToast('Foto berhasil diunggah');
         },
+        onError: () => showToast('Terjadi kesalahan saat mengunggah foto', 'error'),
     });
 };
 
@@ -53,14 +81,72 @@ const confirmDeletePhoto = (photo) => {
 };
 
 const deletePhoto = () => {
+    actionLoading.value = `delete-${photoToDelete.value.id}`;
     router.delete(route('admin.galleries.photos.destroy', photoToDelete.value.id), {
+        preserveScroll: true,
         onSuccess: () => {
             showConfirmModal.value = false;
             photoToDelete.value = null;
             showToast('Foto berhasil dihapus');
-        }
+        },
+        onError: () => showToast('Terjadi kesalahan saat menghapus foto', 'error'),
+        onFinish: () => {
+            actionLoading.value = null;
+        },
     });
 };
+
+const updateCaption = (photo) => {
+    captionForm.caption = captionDrafts.value[photo.id] || '';
+    actionLoading.value = `caption-${photo.id}`;
+    captionForm.patch(route('admin.galleries.photos.caption', photo.id), {
+        preserveScroll: true,
+        onSuccess: () => showToast('Caption berhasil disimpan'),
+        onError: () => showToast('Terjadi kesalahan saat menyimpan caption', 'error'),
+        onFinish: () => {
+            actionLoading.value = null;
+        },
+    });
+};
+
+const setCover = (photo) => {
+    actionLoading.value = `cover-${photo.id}`;
+    router.post(route('admin.galleries.cover.from-photo', [props.gallery.id, photo.id]), {}, {
+        preserveScroll: true,
+        onSuccess: () => showToast('Cover album berhasil diperbarui'),
+        onError: () => showToast('Terjadi kesalahan saat memperbarui cover', 'error'),
+        onFinish: () => {
+            actionLoading.value = null;
+        },
+    });
+};
+
+const movePhoto = (index, direction) => {
+    const targetIndex = index + direction;
+    if (targetIndex < 0 || targetIndex >= props.gallery.photos.length || actionLoading.value) {
+        return;
+    }
+
+    const reordered = [...props.gallery.photos];
+    [reordered[index], reordered[targetIndex]] = [reordered[targetIndex], reordered[index]];
+
+    actionLoading.value = 'reorder';
+    router.post(route('admin.galleries.photos.reorder', props.gallery.id), {
+        photos: reordered.map((photo, photoIndex) => ({
+            id: photo.id,
+            order: photoIndex + 1,
+        })),
+    }, {
+        preserveScroll: true,
+        onSuccess: () => showToast('Urutan foto berhasil diperbarui'),
+        onError: () => showToast('Terjadi kesalahan saat mengubah urutan foto', 'error'),
+        onFinish: () => {
+            actionLoading.value = null;
+        },
+    });
+};
+
+const isCurrentCover = (photo) => props.gallery.cover_image === photo.image_path || props.gallery.cover_image_url === photo.image_url;
 
 const showToast = (message, type = 'success') => {
     toastMessage.value = message;
@@ -70,22 +156,22 @@ const showToast = (message, type = 'success') => {
     }, 3000);
 };
 
-// Check for flash messages
+const formatDate = (value) => {
+    if (!value) return '-';
+    return new Date(value).toLocaleDateString('id-ID', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+    });
+};
+
 watch(() => page.props.flash?.success, (message) => {
-    if (message) {
-        showToast(message);
-    }
+    if (message) showToast(message);
 }, { immediate: true });
 
 watch(() => page.props.flash?.error, (message) => {
-    if (message) {
-        showToast(message, 'error');
-    }
+    if (message) showToast(message, 'error');
 }, { immediate: true });
-
-const goBack = () => {
-    router.visit(route('admin.galleries.index'));
-};
 </script>
 
 <template>
@@ -93,138 +179,156 @@ const goBack = () => {
 
     <AdminLayout>
         <template #header>
-            <div class="flex justify-between items-center">
-                <div class="flex items-center gap-4">
-                    <button @click="goBack" class="p-2 bg-white rounded-lg shadow-sm border border-gray-200 hover:bg-gray-50 transition-colors">
-                        <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                        </svg>
-                    </button>
-                    <h2 class="font-semibold text-xl text-gray-800 leading-tight">Detail Album: {{ gallery.album_name }}</h2>
+            <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                    <Link :href="route('admin.galleries.index')" class="text-sm font-semibold text-emerald-700 hover:text-emerald-800">
+                        &larr; Kembali ke Galeri
+                    </Link>
+                    <h2 class="mt-2 text-xl font-semibold leading-tight text-gray-800">{{ gallery.album_name }}</h2>
+                    <p class="mt-1 text-sm text-gray-500">{{ gallery.photos.length }} foto · dibuat {{ formatDate(gallery.created_at) }}</p>
                 </div>
+                <AdminStatusBadge :status="gallery.photos.length ? 'active' : 'empty'" :label="gallery.photos.length ? 'Aktif' : 'Kosong'" />
             </div>
         </template>
 
-        <div class="py-12">
-            <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-6">
-                <!-- Album Header Card -->
-                <div class="bg-white overflow-hidden shadow-sm rounded-xl border border-gray-100">
-                    <div class="md:flex">
-                        <div class="md:w-1/3 h-64 md:h-auto bg-gray-100">
-                            <img v-if="gallery.cover_image_url" :src="gallery.cover_image_url" class="w-full h-full object-cover" />
-                            <div v-else class="w-full h-full flex items-center justify-center text-gray-400">
-                                <svg class="w-16 h-16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                </svg>
-                            </div>
+        <div class="py-10">
+            <div class="mx-auto max-w-7xl space-y-6 sm:px-6 lg:px-8">
+                <AdminSectionCard title="Informasi Album">
+                    <div class="grid gap-5 md:grid-cols-[260px_1fr]">
+                        <div class="h-48 overflow-hidden rounded-lg bg-gray-100">
+                            <img v-if="gallery.cover_image_url" :src="gallery.cover_image_url" :alt="gallery.album_name" class="h-full w-full object-cover">
+                            <div v-else class="flex h-full w-full items-center justify-center text-sm font-semibold text-gray-400">Belum Ada Cover</div>
                         </div>
-                        <div class="md:w-2/3 p-8">
-                            <h1 class="text-2xl font-bold text-gray-900">{{ gallery.album_name }}</h1>
-                            <p class="text-sm text-gray-500 mt-1">Dibuat pada {{ new Date(gallery.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) }}</p>
-                            
-                            <div class="mt-4">
-                                <h4 class="text-sm font-medium text-gray-700 uppercase tracking-wider">Deskripsi</h4>
-                                <p class="mt-2 text-gray-600 leading-relaxed">
-                                    {{ gallery.description || 'Tidak ada deskripsi untuk album ini.' }}
-                                </p>
-                            </div>
-
-                            <div class="mt-6 flex items-center gap-4">
-                                <div class="px-4 py-2 bg-emerald-50 text-emerald-700 rounded-lg border border-emerald-100 inline-flex items-center gap-2">
-                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                    </svg>
-                                    <span class="font-semibold">{{ gallery.photos.length }} Foto</span>
+                        <div>
+                            <h3 class="text-lg font-semibold text-gray-900">{{ gallery.album_name }}</h3>
+                            <p class="mt-2 text-sm leading-6 text-gray-600">{{ gallery.description || 'Tidak ada deskripsi untuk album ini.' }}</p>
+                            <div class="mt-4 grid gap-3 sm:grid-cols-3">
+                                <div class="rounded-lg border border-gray-100 p-3">
+                                    <p class="text-xs font-semibold uppercase text-gray-500">Foto</p>
+                                    <p class="mt-1 text-2xl font-bold text-gray-900">{{ gallery.photos.length }}</p>
+                                </div>
+                                <div class="rounded-lg border border-gray-100 p-3">
+                                    <p class="text-xs font-semibold uppercase text-gray-500">Cover</p>
+                                    <p class="mt-1 text-sm font-semibold text-gray-900">{{ gallery.cover_image_url ? 'Tersedia' : 'Belum ada' }}</p>
+                                </div>
+                                <div class="rounded-lg border border-gray-100 p-3">
+                                    <p class="text-xs font-semibold uppercase text-gray-500">Update</p>
+                                    <p class="mt-1 text-sm font-semibold text-gray-900">{{ formatDate(gallery.updated_at) }}</p>
                                 </div>
                             </div>
                         </div>
                     </div>
-                </div>
+                </AdminSectionCard>
 
-                <!-- Upload Section -->
-                <div class="bg-white p-6 shadow-sm rounded-xl border border-gray-100">
-                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Upload Foto Baru</h3>
-                    
+                <AdminSectionCard title="Upload Foto Baru" description="Pilih beberapa foto sekaligus. Maksimal 5MB per file.">
                     <form @submit.prevent="submitUpload" class="space-y-4">
-                        <div class="flex items-center justify-center w-full">
-                            <label class="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 transition-colors">
-                                <div class="flex flex-col items-center justify-center pt-5 pb-6">
-                                    <svg class="w-8 h-8 mb-4 text-gray-500" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 16">
-                                        <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 13h3a3 3 0 0 0 0-6h-.025A5.56 5.56 0 0 0 16 6.5 5.5 5.5 0 0 0 5.207 5.021C5.137 5.017 5.071 5 5 5a4 4 0 0 0 0 8h2.167M10 15V6m0 0L8 8m2-2 2 2"/>
-                                    </svg>
-                                    <p class="mb-2 text-sm text-gray-500"><span class="font-semibold">Klik untuk upload</span> atau seret dan lepas</p>
-                                    <p class="text-xs text-gray-500">PNG, JPG atau WEBP (Multiple allowed)</p>
-                                </div>
-                                <input type="file" class="hidden" multiple accept="image/*" @change="handleFileChange" />
-                            </label>
+                        <label class="flex min-h-32 cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-gray-300 bg-gray-50 px-4 py-6 text-center hover:bg-gray-100">
+                            <span class="text-sm font-semibold text-gray-700">Klik untuk memilih foto</span>
+                            <span class="mt-1 text-xs text-gray-500">PNG, JPG, GIF, WEBP</span>
+                            <input type="file" class="hidden" multiple accept="image/*" @change="handleFileChange">
+                        </label>
+
+                        <div v-if="imagePreviews.length" class="grid grid-cols-2 gap-3 md:grid-cols-4 lg:grid-cols-6">
+                            <div v-for="preview in imagePreviews" :key="preview.url" class="overflow-hidden rounded-lg border border-gray-100 bg-white">
+                                <img :src="preview.url" :alt="preview.name" class="aspect-square w-full object-cover">
+                                <p class="truncate px-2 py-1 text-xs text-gray-500">{{ preview.name }}</p>
+                            </div>
                         </div>
 
-                        <!-- Preview -->
-                        <div v-if="imagePreviews.length > 0" class="space-y-4">
-                            <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-                                <div v-for="(preview, index) in imagePreviews" :key="index" class="relative aspect-square">
-                                    <img :src="preview" class="w-full h-full object-cover rounded-lg border border-gray-200" />
-                                </div>
-                            </div>
-                            <div class="flex justify-end gap-3">
-                                <SecondaryButton @click="imagePreviews = []; uploadForm.reset();">Batal</SecondaryButton>
-                                <PrimaryButton :disabled="uploadForm.processing">
-                                    <span v-if="uploadForm.processing">Mengunggah...</span>
-                                    <span v-else>Unggah {{ uploadForm.photos.length }} Foto</span>
-                                </PrimaryButton>
-                            </div>
-                        </div>
-                        <div v-if="uploadForm.errors.photos" class="text-sm text-red-600">
-                            {{ uploadForm.errors.photos }}
+                        <p v-if="fileError || uploadForm.errors.photos" class="text-sm text-red-600">
+                            {{ fileError || uploadForm.errors.photos }}
+                        </p>
+
+                        <div class="flex justify-end gap-3">
+                            <SecondaryButton type="button" @click="resetUpload">Batal</SecondaryButton>
+                            <PrimaryButton type="submit" :disabled="uploadForm.processing || !uploadForm.photos.length" :class="{ 'opacity-50': uploadForm.processing || !uploadForm.photos.length }">
+                                {{ uploadForm.processing ? 'Mengunggah...' : `Unggah ${uploadForm.photos.length} Foto` }}
+                            </PrimaryButton>
                         </div>
                     </form>
-                </div>
+                </AdminSectionCard>
 
-                <!-- Photo Grid -->
-                <div class="bg-white p-6 shadow-sm rounded-xl border border-gray-100">
-                    <h3 class="text-lg font-semibold text-gray-900 mb-6">Koleksi Foto</h3>
-                    
-                    <div v-if="gallery.photos.length > 0" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                        <div v-for="photo in gallery.photos" :key="photo.id" class="group relative aspect-square overflow-hidden rounded-xl bg-gray-100 border border-gray-200">
-                            <img :src="photo.image_url" class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110" />
-                            
-                            <!-- Overlay -->
-                            <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                <button 
-                                    @click="confirmDeletePhoto(photo)"
-                                    class="p-2 bg-red-600 text-white rounded-full hover:bg-red-700 transform translate-y-4 group-hover:translate-y-0 transition-all duration-300 shadow-lg"
-                                    title="Hapus Foto"
-                                >
-                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                    </svg>
-                                </button>
+                <AdminSectionCard title="Koleksi Foto" description="Atur cover, caption, urutan, dan hapus foto album.">
+                    <div v-if="gallery.photos.length" class="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+                        <article v-for="(photo, index) in gallery.photos" :key="photo.id" class="overflow-hidden rounded-lg border border-gray-100 bg-white shadow-sm">
+                            <div class="relative">
+                                <img :src="photo.image_url" :alt="photo.caption || gallery.album_name" class="aspect-[4/3] w-full object-cover">
+                                <div v-if="isCurrentCover(photo)" class="absolute left-3 top-3">
+                                    <AdminStatusBadge status="active" label="Cover" />
+                                </div>
                             </div>
 
-                            <div v-if="photo.caption" class="absolute bottom-0 inset-x-0 p-2 bg-black/60 text-white text-xs truncate">
-                                {{ photo.caption }}
+                            <div class="space-y-4 p-4">
+                                <div>
+                                    <label :for="`caption-${photo.id}`" class="text-xs font-semibold uppercase text-gray-500">Caption</label>
+                                    <textarea
+                                        :id="`caption-${photo.id}`"
+                                        v-model="captionDrafts[photo.id]"
+                                        rows="2"
+                                        class="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-emerald-500 focus:ring-emerald-500"
+                                        placeholder="Tulis caption foto..."
+                                    ></textarea>
+                                </div>
+
+                                <div class="flex flex-wrap items-center gap-2">
+                                    <button
+                                        type="button"
+                                        class="rounded-md border border-gray-200 px-3 py-2 text-xs font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                                        :disabled="actionLoading === `caption-${photo.id}`"
+                                        @click="updateCaption(photo)"
+                                    >
+                                        Simpan Caption
+                                    </button>
+                                    <button
+                                        type="button"
+                                        class="rounded-md border border-gray-200 px-3 py-2 text-xs font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                                        :disabled="isCurrentCover(photo) || actionLoading === `cover-${photo.id}`"
+                                        @click="setCover(photo)"
+                                    >
+                                        Jadikan Cover
+                                    </button>
+                                    <button
+                                        type="button"
+                                        class="rounded-md border border-gray-200 px-3 py-2 text-xs font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                                        :disabled="index === 0 || actionLoading === 'reorder'"
+                                        @click="movePhoto(index, -1)"
+                                    >
+                                        Naik
+                                    </button>
+                                    <button
+                                        type="button"
+                                        class="rounded-md border border-gray-200 px-3 py-2 text-xs font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                                        :disabled="index === gallery.photos.length - 1 || actionLoading === 'reorder'"
+                                        @click="movePhoto(index, 1)"
+                                    >
+                                        Turun
+                                    </button>
+                                    <button
+                                        type="button"
+                                        class="ml-auto rounded-md border border-red-100 px-3 py-2 text-xs font-semibold text-red-600 hover:bg-red-50"
+                                        @click="confirmDeletePhoto(photo)"
+                                    >
+                                        Hapus
+                                    </button>
+                                </div>
                             </div>
-                        </div>
+                        </article>
                     </div>
 
-                    <div v-else class="text-center py-12">
-                        <div class="bg-gray-50 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
-                            <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                            </svg>
-                        </div>
-                        <p class="text-gray-500 font-medium">Belum ada foto dalam album ini.</p>
-                        <p class="text-gray-400 text-sm mt-1">Gunakan form di atas untuk mengunggah foto pertama Anda!</p>
-                    </div>
-                </div>
+                    <AdminEmptyState
+                        v-else
+                        title="Album belum memiliki foto"
+                        message="Upload foto pertama agar album ini tampil lengkap di galeri."
+                    />
+                </AdminSectionCard>
             </div>
         </div>
 
-        <!-- Confirm Delete Photo Modal -->
         <ConfirmModal
             :show="showConfirmModal"
+            :loading="actionLoading === `delete-${photoToDelete?.id}`"
             title="Hapus Foto?"
-            message="Apakah Anda yakin ingin menghapus foto ini? Tindakan ini tidak dapat dibatalkan."
+            message="Apakah Anda yakin ingin menghapus foto ini? Jika foto ini menjadi cover, cover akan dipindahkan otomatis."
             @confirm="deletePhoto"
             @close="showConfirmModal = false"
         />

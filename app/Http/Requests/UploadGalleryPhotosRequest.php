@@ -23,7 +23,7 @@ class UploadGalleryPhotosRequest extends FormRequest
     {
         return [
             'photos' => ['required', 'array'],
-            'photos.*' => ['required', 'image', 'max:5120'],
+            'photos.*' => ['required', 'image', 'mimes:jpeg,png,jpg,webp', 'max:5120', 'dimensions:min_width=200,min_height=200'],
         ];
     }
 }

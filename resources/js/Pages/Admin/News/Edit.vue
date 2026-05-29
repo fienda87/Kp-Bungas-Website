@@ -4,7 +4,7 @@ import AdminLayout from '@/Layouts/AdminLayout.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import FileUpload from '@/Components/Admin/FileUpload.vue';
 import ToastNotification from '@/Components/Admin/ToastNotification.vue';
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 import { QuillEditor } from '@vueup/vue-quill';
 import '@vueup/vue-quill/dist/vue-quill.snow.css';
 
@@ -15,6 +15,10 @@ const props = defineProps({
 
 const toastMessage = ref('');
 const toastType = ref('success');
+const uploadErrors = ref({
+    thumbnail: '',
+    pdf_file: '',
+});
 
 const formatForInput = (dateString) => {
     if (!dateString) return null;
@@ -24,20 +28,37 @@ const formatForInput = (dateString) => {
 
 const form = useForm({
     _method: 'PUT',
-    title: props.news.title,
-    content: props.news.content,
-    category: props.news.category,
-    status: props.news.status,
+    title: props.news.data.title,
+    content: props.news.data.raw_content || props.news.data.content,
+    category: props.news.data.category,
+    status: props.news.data.status,
     thumbnail: null,
     pdf_file: null,
-    published_at: formatForInput(props.news.published_at),
+    published_at: formatForInput(props.news.data.published_at),
 });
 
-const submit = () => {
+const thumbnailError = computed(() => uploadErrors.value.thumbnail || form.errors.thumbnail);
+const pdfError = computed(() => uploadErrors.value.pdf_file || form.errors.pdf_file);
+
+const setUploadError = (field, message) => {
+    uploadErrors.value[field] = message;
+};
+
+const submit = (status = null) => {
+    if (uploadErrors.value.thumbnail || uploadErrors.value.pdf_file) {
+        showToast('Periksa kembali file yang diunggah.', 'error');
+        return;
+    }
+
+    if (status) {
+        form.status = status;
+    }
+
     // We use POST with _method PUT because of file upload limitation in Laravel with PUT
-    form.post(route('admin.news.update', props.news.slug), {
+    form.post(route('admin.news.update', props.news.data.slug), {
+        forceFormData: true,
         onSuccess: () => {
-            showToast('Berita berhasil diperbarui');
+            showToast(form.status === 'published' ? 'Berita berhasil dipublikasikan' : 'Draft berhasil disimpan');
         },
         onError: () => {
             showToast('Terjadi kesalahan saat memperbarui berita', 'error');
@@ -69,7 +90,7 @@ const showToast = (message, type = 'success') => {
 
         <div class="py-12">
             <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-                <form @submit.prevent="submit" class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <form @submit.prevent="submit()" class="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <!-- Main Content -->
                     <div class="md:col-span-2 space-y-6">
                         <div class="bg-white p-6 rounded-lg shadow-sm">
@@ -149,17 +170,29 @@ const showToast = (message, type = 'success') => {
                             </div>
 
                             <div class="mt-6 pt-4 border-t text-xs text-gray-500">
-                                <p>Dibuat pada: {{ new Date(news.created_at).toLocaleString() }}</p>
-                                <p v-if="news.published_at">Diterbitkan pada: {{ new Date(news.published_at).toLocaleString() }}</p>
+                                <p>Dibuat pada: {{ new Date(news.data.created_at).toLocaleString('id-ID') }}</p>
+                                <p v-if="news.data.published_at">Diterbitkan pada: {{ new Date(news.data.published_at).toLocaleString('id-ID') }}</p>
                             </div>
 
-                            <div class="mt-6 pt-4 border-t">
+                            <div class="mt-6 grid gap-3 border-t pt-4">
+                                <button
+                                    type="button"
+                                    class="w-full rounded-md border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                                    :disabled="form.processing"
+                                    @click="submit('draft')"
+                                >
+                                    <span v-if="form.processing && form.status === 'draft'">Menyimpan...</span>
+                                    <span v-else>Simpan Draft</span>
+                                </button>
                                 <PrimaryButton
+                                    type="button"
                                     class="w-full justify-center"
                                     :class="{ 'opacity-25': form.processing }"
                                     :disabled="form.processing"
+                                    @click="submit('published')"
                                 >
-                                    Perbarui Berita
+                                    <span v-if="form.processing && form.status === 'published'">Memperbarui...</span>
+                                    <span v-else>Publish Berita</span>
                                 </PrimaryButton>
                             </div>
                         </div>
@@ -168,35 +201,43 @@ const showToast = (message, type = 'success') => {
                         <div class="bg-white p-6 rounded-lg shadow-sm">
                             <h3 class="text-sm font-medium text-gray-700 mb-4 border-b pb-2">Thumbnail</h3>
                             
-                            <div v-if="news.thumbnail" class="mb-4">
+                            <div v-if="news.data.thumbnail" class="mb-4">
                                 <p class="text-xs text-gray-500 mb-2">Thumbnail saat ini:</p>
-                                <img :src="'/storage/' + news.thumbnail" class="w-full h-32 object-cover rounded-md border" alt="Thumbnail">
+                                <img :src="news.data.thumbnail" class="w-full h-32 object-cover rounded-md border" alt="Thumbnail">
                             </div>
 
                             <FileUpload
                                 v-model="form.thumbnail"
                                 accept="image/*"
                                 label="Ubah thumbnail"
+                                :max-size-mb="5"
+                                helper-text="JPG, PNG, GIF, WEBP hingga 5MB"
+                                :preview-url="news.data.thumbnail"
                                 preview
+                                :error="thumbnailError"
+                                @validation-error="setUploadError('thumbnail', $event)"
                             />
-                            <div v-if="form.errors.thumbnail" class="text-red-500 text-xs mt-1">{{ form.errors.thumbnail }}</div>
                         </div>
 
                         <!-- PDF Attachment -->
                         <div class="bg-white p-6 rounded-lg shadow-sm">
                             <h3 class="text-sm font-medium text-gray-700 mb-4 border-b pb-2">Lampiran PDF</h3>
                             
-                            <div v-if="news.pdf_file" class="mb-4 p-2 bg-gray-50 rounded border flex items-center">
-                                <span class="text-xs text-gray-600 truncate flex-1">{{ news.pdf_file.split('/').pop() }}</span>
-                                <a :href="'/storage/' + news.pdf_file" target="_blank" class="text-primary hover:underline text-xs ml-2">Lihat</a>
+                            <div v-if="news.data.pdf_file" class="mb-4 p-2 bg-gray-50 rounded border flex items-center">
+                                <span class="text-xs text-gray-600 truncate flex-1">{{ news.data.pdf_file.split('/').pop() }}</span>
+                                <a :href="news.data.pdf_file" target="_blank" class="text-primary hover:underline text-xs ml-2" rel="noreferrer">Lihat</a>
                             </div>
 
                             <FileUpload
                                 v-model="form.pdf_file"
                                 accept=".pdf"
                                 label="Ubah file PDF"
+                                :max-size-mb="10"
+                                helper-text="PDF hingga 10MB"
+                                :preview-url="news.data.pdf_file"
+                                :error="pdfError"
+                                @validation-error="setUploadError('pdf_file', $event)"
                             />
-                            <div v-if="form.errors.pdf_file" class="text-red-500 text-xs mt-1">{{ form.errors.pdf_file }}</div>
                         </div>
                     </div>
                 </form>

@@ -4,11 +4,17 @@ use App\Http\Controllers\Admin\NewsController as AdminNewsController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\GalleryController as AdminGalleryController;
 use App\Http\Controllers\Admin\ProgramController as AdminProgramController;
+use App\Http\Controllers\Admin\UserController as AdminUserController;
+use App\Http\Controllers\Admin\SettingController as AdminSettingController;
 use App\Http\Controllers\PageController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
+use App\Http\Controllers\Auth\GoogleController;
+
+Route::get('auth/google', [GoogleController::class, 'redirectToGoogle'])->name('auth.google');
+Route::get('auth/google/callback', [GoogleController::class, 'handleGoogleCallback']);
 
 Route::get('/', [PageController::class, 'home'])->name('home');
 Route::get('/about', [PageController::class, 'about'])->name('about');
@@ -22,8 +28,8 @@ Route::get('/news', [PageController::class, 'newsIndex'])->name('news.index');
 Route::get('/news/{news}', [PageController::class, 'newsShow'])->name('news.show');
 
 Route::get('/dashboard', function () {
-    return Inertia::render('Dashboard');
-})->middleware(['auth', 'verified'])->name('dashboard');
+    return redirect()->route('admin.dashboard');
+})->middleware(['auth', 'role:admin'])->name('dashboard');
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
@@ -32,19 +38,31 @@ Route::middleware('auth')->group(function () {
 });
 
 // Admin Routes
-Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
-    Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
+Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () {
     
-    Route::resource('news', AdminNewsController::class);
-    Route::resource('programs', AdminProgramController::class);
-    
-    Route::get('galleries', [AdminGalleryController::class, 'index'])->name('galleries.index');
-    Route::get('galleries/{gallery}', [AdminGalleryController::class, 'show'])->name('galleries.show');
-    Route::post('galleries', [AdminGalleryController::class, 'store'])->name('galleries.store');
-    Route::put('galleries/{gallery}', [AdminGalleryController::class, 'update'])->name('galleries.update');
-    Route::delete('galleries/{gallery}', [AdminGalleryController::class, 'destroy'])->name('galleries.destroy');
-    Route::post('galleries/{gallery}/photos', [AdminGalleryController::class, 'uploadPhotos'])->name('galleries.photos.upload');
-    Route::delete('galleries/photos/{photo}', [AdminGalleryController::class, 'deletePhoto'])->name('galleries.photos.destroy');
+    // Accessible only by admin
+    Route::middleware(['role:admin'])->group(function () {
+        Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
+        Route::resource('news', AdminNewsController::class);
+        Route::post('programs/reorder', [AdminProgramController::class, 'reorder'])->name('programs.reorder');
+        Route::resource('programs', AdminProgramController::class)->except(['create', 'show', 'edit']);
+        
+        Route::get('galleries', [AdminGalleryController::class, 'index'])->name('galleries.index');
+        Route::get('galleries/{gallery}', [AdminGalleryController::class, 'show'])->name('galleries.show');
+        Route::post('galleries', [AdminGalleryController::class, 'store'])->name('galleries.store');
+        Route::put('galleries/{gallery}', [AdminGalleryController::class, 'update'])->name('galleries.update');
+        Route::delete('galleries/{gallery}', [AdminGalleryController::class, 'destroy'])->name('galleries.destroy');
+        Route::post('galleries/{gallery}/photos', [AdminGalleryController::class, 'uploadPhotos'])->name('galleries.photos.upload');
+        Route::post('galleries/{gallery}/photos/reorder', [AdminGalleryController::class, 'reorderPhotos'])->name('galleries.photos.reorder');
+        Route::post('galleries/{gallery}/cover-from-photo/{photo}', [AdminGalleryController::class, 'setCoverFromPhoto'])->name('galleries.cover.from-photo');
+        Route::patch('galleries/photos/{photo}/caption', [AdminGalleryController::class, 'updatePhotoCaption'])->name('galleries.photos.caption');
+        Route::delete('galleries/photos/{photo}', [AdminGalleryController::class, 'deletePhoto'])->name('galleries.photos.destroy');
+
+        Route::resource('users', AdminUserController::class)->except(['show']);
+        
+        Route::get('settings', [AdminSettingController::class, 'index'])->name('settings.index');
+        Route::post('settings', [AdminSettingController::class, 'update'])->name('settings.update');
+    });
 });
 
 require __DIR__.'/auth.php';
