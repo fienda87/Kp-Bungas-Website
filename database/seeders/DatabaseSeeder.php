@@ -3,7 +3,6 @@
 namespace Database\Seeders;
 
 use App\Models\User;
-use App\Models\Role;
 use Illuminate\Database\Seeder;
 
 class DatabaseSeeder extends Seeder
@@ -17,12 +16,13 @@ class DatabaseSeeder extends Seeder
             RoleSeeder::class,
         ]);
 
-        User::factory()->create([
+        $admin = User::factory()->create([
             'name' => 'Admin Kampung Bungas',
             'email' => 'admin@kampungbungas.id',
             'password' => bcrypt('admin123'),
-            'role_id' => 1, // Admin
         ]);
+
+        $admin->assignRole('admin');
 
         $this->call([
             NewsSeeder::class,

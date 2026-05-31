@@ -6,7 +6,6 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Support\Facades\Storage;
 
 class Gallery extends Model
 {
@@ -27,6 +26,6 @@ class Gallery extends Model
 
     public function getCoverImageUrlAttribute()
     {
-        return $this->cover_image ? Storage::url($this->cover_image) : null;
+        return $this->cover_image ? '/storage/'.ltrim($this->cover_image, '/') : null;
     }
 }

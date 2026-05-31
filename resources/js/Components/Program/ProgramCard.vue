@@ -24,10 +24,10 @@ defineProps({
 </script>
 
 <template>
-    <article class="overflow-hidden rounded-2xl bg-white shadow-[0_10px_15px_-3px_rgba(0,0,0,0.1),0_4px_6px_-4px_rgba(0,0,0,0.1)] transition-transform duration-300 hover:-translate-y-1">
+    <article class="group overflow-hidden rounded-2xl bg-white shadow-[0_10px_15px_-3px_rgba(0,0,0,0.06),0_4px_6px_-4px_rgba(0,0,0,0.06)] border border-slate-100 transition-all duration-500 ease-out hover:-translate-y-2 hover:shadow-2xl">
         <!-- Image Container -->
         <div class="relative h-48 overflow-hidden bg-slate-200 sm:h-80 lg:h-96">
-            <img v-if="image" :src="image" :alt="title" class="h-full w-full object-cover transition duration-500 hover:scale-105" loading="lazy" />
+            <img v-if="image" :src="image" :alt="title" class="h-full w-full object-cover transition duration-700 ease-out group-hover:scale-[1.03]" loading="lazy" />
             <div v-else class="flex h-full w-full items-center justify-center bg-emerald-50 text-emerald-700 font-medium">Belum ada gambar</div>
         </div>
 

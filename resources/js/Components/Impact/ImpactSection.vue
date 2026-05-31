@@ -19,13 +19,14 @@ const impactStore = useImpactStore();
 
             <div class="mt-16 grid gap-8 md:grid-cols-2 xl:grid-cols-4">
                 <ImpactStatCard
-                    v-for="item in impactStore.stats"
+                    v-for="(item, index) in impactStore.stats"
                     :key="item.id"
                     :icon="item.icon"
                     :icon-gradient="item.iconGradient"
                     :value="item.value"
                     :label="item.label"
                     :description="item.description"
+                    :delay-class="['delay-0', 'delay-100', 'delay-200', 'delay-300'][index] || 'delay-0'"
                 />
             </div>
 

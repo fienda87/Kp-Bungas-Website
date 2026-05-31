@@ -30,7 +30,7 @@ const defaultGradients = [
                 <article
                     v-for="(program, index) in programs"
                     :key="program.id"
-                    class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-md transition hover:-translate-y-2 hover:shadow-xl"
+                    class="group overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-md transition-all duration-500 ease-out hover:-translate-y-2 hover:shadow-xl"
                 >
                     <!-- Program Image -->
                     <div class="relative h-48 overflow-hidden bg-slate-200">
@@ -38,7 +38,7 @@ const defaultGradients = [
                             v-if="program.image_url"
                             :src="program.image_url"
                             :alt="program.title"
-                            class="h-full w-full object-cover"
+                            class="h-full w-full object-cover transition duration-700 ease-out group-hover:scale-[1.03]"
                         />
                         <div v-else class="flex h-full w-full items-center justify-center bg-slate-100 text-slate-500 font-medium">Belum ada gambar</div>
                         <div class="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />

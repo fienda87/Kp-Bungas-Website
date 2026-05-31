@@ -2,7 +2,7 @@
 
 namespace Tests\Feature\Admin;
 
-use App\Models\Role;
+use Spatie\Permission\Models\Role;
 use App\Models\User;
 use App\Models\News;
 use App\Models\Program;
@@ -22,8 +22,9 @@ class DashboardTest extends TestCase
         parent::setUp();
         $this->withoutVite();
 
-        $adminRole = Role::factory()->create(['name' => 'Admin', 'slug' => 'admin']);
-        $this->admin = User::factory()->create(['role_id' => $adminRole->id]);
+        $adminRole = Role::create(['name' => 'admin']);
+        $this->admin = User::factory()->create();
+        $this->admin->assignRole($adminRole);
     }
 
     public function test_admin_can_view_dashboard()

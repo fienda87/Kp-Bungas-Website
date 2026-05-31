@@ -14,7 +14,22 @@ const props = defineProps({
 const search = ref(props.filters?.search || '');
 const selectedCategory = ref(props.filters?.category || '');
 
+const isDropdownOpen = ref(false);
+
+const selectCategory = (category) => {
+    selectedCategory.value = category;
+    isDropdownOpen.value = false;
+};
+
 const items = computed(() => props.news?.data ?? []);
+const limit = ref(6);
+const visibleItems = computed(() => items.value.slice(0, limit.value));
+const hasMore = computed(() => items.value.length > limit.value);
+
+const showMore = () => {
+    limit.value += 6;
+};
+
 const paginationLinks = computed(() => props.news?.meta?.links ?? []);
 const hasActiveFilters = computed(() => Boolean(search.value.trim() || selectedCategory.value));
 const isFilteredEmpty = computed(() => hasActiveFilters.value && items.value.length === 0);
@@ -29,6 +44,7 @@ const resultsLabel = computed(() => {
 });
 
 const applyFilters = debounce(() => {
+    limit.value = 6;
     router.get(route('news.index'), buildNewsFilterParams({
         search: search.value,
         category: selectedCategory.value,
@@ -43,14 +59,11 @@ watch([search, selectedCategory], applyFilters);
 const resetFilters = () => {
     search.value = '';
     selectedCategory.value = '';
+    limit.value = 6;
     router.get(route('news.index'), {}, {
         preserveState: true,
         replace: true,
     });
-};
-
-const goToLogin = () => {
-    router.visit(route('login'));
 };
 </script>
 
@@ -73,7 +86,7 @@ const goToLogin = () => {
                         </p>
                     </div>
 
-                    <div class="mx-auto w-full max-w-5xl rounded-[2rem] border border-emerald-100 bg-white/90 p-5 shadow-[0_20px_60px_-35px_rgba(16,185,129,0.35)] backdrop-blur sm:p-6">
+                    <div class="mx-auto w-full max-w-5xl rounded-[2rem] border border-emerald-100 bg-white/90 p-5 shadow-[0_20px_60px_-35px_rgba(16,185,129,0.35)] backdrop-blur sm:p-6 relative z-20">
                         <div class="grid gap-4 md:grid-cols-[1.6fr_0.8fr_auto] md:items-end">
                             <label class="text-left">
                                 <span class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
@@ -83,24 +96,81 @@ const goToLogin = () => {
                                     v-model="search"
                                     type="text"
                                     placeholder="Cari judul atau isi berita..."
-                                    class="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-emerald-500 focus:bg-white focus:ring-emerald-500"
+                                    class="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-primary focus:bg-white focus:ring-2 focus:ring-primary/20 transition-all duration-300"
                                 >
                             </label>
 
-                            <label class="text-left">
+                            <div class="text-left">
                                 <span class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
                                     Kategori
                                 </span>
-                                <select
-                                    v-model="selectedCategory"
-                                    class="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 focus:border-emerald-500 focus:bg-white focus:ring-emerald-500"
-                                >
-                                    <option value="">Semua kategori</option>
-                                    <option v-for="category in categories || []" :key="category" :value="category">
-                                        {{ category }}
-                                    </option>
-                                </select>
-                            </label>
+                                <div class="relative text-left w-full mt-2" @mouseenter="isDropdownOpen = true" @mouseleave="isDropdownOpen = false">
+                                    <!-- Backdrop to close dropdown on click outside -->
+                                    <div v-if="isDropdownOpen" class="fixed inset-0 z-20" @click="isDropdownOpen = false" />
+
+                                    <!-- Dropdown Trigger Button -->
+                                    <button
+                                        type="button"
+                                        @click="isDropdownOpen = !isDropdownOpen"
+                                        class="flex w-full items-center justify-between rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 focus:border-primary focus:bg-white focus:ring-2 focus:ring-primary/20 transition-all duration-200 select-none outline-none z-30 relative cursor-pointer"
+                                        :class="isDropdownOpen ? 'border-primary bg-white ring-2 ring-primary/20 shadow-sm' : ''"
+                                    >
+                                        <span>{{ selectedCategory || 'Semua kategori' }}</span>
+                                        <!-- Chevron Icon -->
+                                        <svg 
+                                            class="h-5 w-5 text-slate-400 transition-transform duration-300 transform" 
+                                            :class="isDropdownOpen ? 'rotate-180 text-primary' : ''"
+                                            fill="none" 
+                                            stroke="currentColor" 
+                                            viewBox="0 0 24 24"
+                                        >
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                                        </svg>
+                                    </button>
+
+                                    <!-- Dropdown Options List -->
+                                    <transition
+                                        enter-active-class="transition duration-200 ease-out"
+                                        enter-from-class="transform scale-95 opacity-0 -translate-y-2"
+                                        enter-to-class="transform scale-100 opacity-100 translate-y-0"
+                                        leave-active-class="transition duration-150 ease-in"
+                                        leave-from-class="transform scale-100 opacity-100 translate-y-0"
+                                        leave-to-class="transform scale-95 opacity-0 -translate-y-2"
+                                    >
+                                        <ul
+                                            v-show="isDropdownOpen"
+                                            class="absolute left-0 mt-2 w-full rounded-2xl border border-slate-100 bg-white p-2 shadow-xl z-30 transform origin-top overflow-hidden max-h-60 overflow-y-auto"
+                                        >
+                                            <li>
+                                                <button
+                                                    type="button"
+                                                    @click="selectCategory('')"
+                                                    class="flex w-full items-center justify-between rounded-xl px-4 py-2.5 text-left text-sm font-semibold transition-all duration-150 cursor-pointer hover:bg-emerald-600 hover:text-white group"
+                                                    :class="selectedCategory === '' ? 'bg-emerald-50 text-emerald-700' : 'text-slate-700'"
+                                                >
+                                                    <span>Semua kategori</span>
+                                                    <svg v-if="selectedCategory === ''" class="w-4 h-4 text-emerald-600 group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
+                                                    </svg>
+                                                </button>
+                                            </li>
+                                            <li v-for="category in categories || []" :key="category">
+                                                <button
+                                                    type="button"
+                                                    @click="selectCategory(category)"
+                                                    class="flex w-full items-center justify-between rounded-xl px-4 py-2.5 text-left text-sm font-semibold transition-all duration-150 cursor-pointer hover:bg-emerald-600 hover:text-white group"
+                                                    :class="selectedCategory === category ? 'bg-emerald-50 text-emerald-700' : 'text-slate-700'"
+                                                >
+                                                    <span>{{ category }}</span>
+                                                    <svg v-if="selectedCategory === category" class="w-4 h-4 text-emerald-600 group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
+                                                    </svg>
+                                                </button>
+                                            </li>
+                                        </ul>
+                                    </transition>
+                                </div>
+                            </div>
 
                             <button
                                 type="button"
@@ -133,7 +203,7 @@ const goToLogin = () => {
                 <div v-if="items.length" class="mt-12 space-y-10">
                     <div class="grid gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-3">
                         <article
-                            v-for="item in items"
+                            v-for="item in visibleItems"
                             :key="item.id"
                             class="group relative flex flex-col overflow-hidden rounded-[1.5rem] bg-white p-3 shadow-[0_8px_30px_rgb(0,0,0,0.04)] ring-1 ring-slate-100/80 transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_8px_30px_rgb(0,0,0,0.12)]"
                         >
@@ -183,31 +253,14 @@ const goToLogin = () => {
                     </button>
                 </div>
 
-                <div v-if="paginationLinks.length > 3" class="mt-12 flex justify-center">
-                    <nav class="flex flex-wrap items-center justify-center gap-2" aria-label="Pagination">
-                        <Link
-                            v-for="link in paginationLinks"
-                            :key="`${link.label}-${link.url}`"
-                            :href="link.url || '#'"
-                            v-html="link.label"
-                            :class="[
-                                'min-w-11 rounded-2xl border px-4 py-3 text-center text-sm font-semibold transition',
-                                link.active
-                                    ? 'border-emerald-600 bg-emerald-600 text-white'
-                                    : 'border-slate-200 bg-white text-slate-600 hover:border-emerald-200 hover:text-emerald-700',
-                                !link.url ? 'pointer-events-none opacity-50' : '',
-                            ]"
-                        />
-                    </nav>
-                </div>
-
-                <div class="mt-14 flex justify-center">
+                <!-- Tampilkan Lebih Banyak / Load More Button -->
+                <div v-if="hasMore" class="mt-12 flex justify-center">
                     <button
                         type="button"
-                        class="rounded-full bg-emerald-600 px-8 py-3 text-sm font-semibold text-white shadow-lg shadow-emerald-200 transition hover:bg-emerald-700"
-                        @click="goToLogin"
+                        class="rounded-full bg-emerald-600 px-8 py-3.5 text-sm font-bold text-white shadow-lg shadow-emerald-200 hover:bg-emerald-700 active:scale-95 transition-all duration-200 cursor-pointer"
+                        @click="showMore"
                     >
-                        Masuk ke Admin
+                        Tampilkan Lebih Banyak
                     </button>
                 </div>
             </div>
