@@ -6,12 +6,43 @@ import Footer from '../Components/Landing/Footer.vue';
 import ErrorBoundary from '../Components/ErrorBoundary.vue';
 import SkeletonLoader from '../Components/SkeletonLoader.vue';
 
+// GSAP and Lenis
+import { gsap } from 'gsap';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import Lenis from 'lenis';
+
+gsap.registerPlugin(ScrollTrigger);
+
 const isLoading = ref(false);
 
 let removeStartEventListener = null;
 let removeFinishEventListener = null;
+let lenis = null;
 
 onMounted(() => {
+    // Setup Lenis Smooth Scrolling
+    lenis = new Lenis({
+        duration: 1.2,
+        easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)), // https://www.desmos.com/calculator/brs54l4xou
+        direction: 'vertical',
+        gestureDirection: 'vertical',
+        smooth: true,
+        mouseMultiplier: 1,
+        smoothTouch: false,
+        touchMultiplier: 2,
+        infinite: false,
+    });
+
+    // Synchronize Lenis scrolling with GSAP ScrollTrigger
+    lenis.on('scroll', ScrollTrigger.update);
+
+    gsap.ticker.add((time) => {
+        lenis.raf(time * 1000);
+    });
+
+    gsap.ticker.lagSmoothing(0);
+
+    // Inertia events for Skeleton
     removeStartEventListener = router.on('start', () => isLoading.value = true);
     removeFinishEventListener = router.on('finish', () => isLoading.value = false);
 });
@@ -19,6 +50,10 @@ onMounted(() => {
 onUnmounted(() => {
     if (removeStartEventListener) removeStartEventListener();
     if (removeFinishEventListener) removeFinishEventListener();
+    if (lenis) {
+        lenis.destroy();
+        gsap.ticker.remove((time) => lenis.raf(time * 1000));
+    }
 });
 </script>
 

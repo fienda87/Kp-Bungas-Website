@@ -14,19 +14,26 @@ class PageController extends Controller
 {
     public function home()
     {
+        // Ubah caching agar menyimpan pure array/resolved resource, bukan objek Eloquent
         $featuredNews = Cache::remember('home.featured_news', 3600, function () {
-            return News::where('status', 'published')
+            $news = News::where('status', 'published')
                 ->orderBy('published_at', 'desc')
                 ->take(3)
                 ->get();
+            
+            return NewsResource::collection($news)->resolve();
         });
 
         $programs = Cache::remember('home.programs', 86400, function () {
-            return Program::where('is_active', true)->orderBy('order')->take(4)->get();
+            return Program::where('is_active', true)
+                ->orderBy('order')
+                ->take(4)
+                ->get()
+                ->toArray();
         });
 
         return Inertia::render('Home', [
-            'featuredNews' => NewsResource::collection($featuredNews),
+            'featuredNews' => $featuredNews,
             'programs' => $programs
         ]);
     }
@@ -39,7 +46,7 @@ class PageController extends Controller
     public function program()
     {
         $programs = Cache::remember('page.programs', 86400, function () {
-            return Program::where('is_active', true)->orderBy('order')->get();
+            return Program::where('is_active', true)->orderBy('order')->get()->toArray();
         });
         
         return Inertia::render('Program', [
@@ -55,7 +62,7 @@ class PageController extends Controller
     public function galeri()
     {
         $galleries = Cache::remember('page.galleries', 3600, function () {
-            return Gallery::with('photos')->latest()->get();
+            return Gallery::with('photos')->latest()->get()->toArray();
         });
         
         return Inertia::render('Galeri', [
@@ -118,16 +125,18 @@ class PageController extends Controller
         $news->incrementViewCount();
 
         $recentNews = Cache::remember('news.recent.' . $news->id, 3600, function () use ($news) {
-            return News::where('status', 'published')
+            $recent = News::where('status', 'published')
                 ->where('id', '!=', $news->id)
                 ->latest('published_at')
                 ->take(3)
                 ->get();
+            
+            return NewsResource::collection($recent)->resolve();
         });
 
         return Inertia::render('News/Show', [
             'news' => new NewsResource($news),
-            'recentNews' => NewsResource::collection($recentNews)
+            'recentNews' => $recentNews
         ]);
     }
 }
