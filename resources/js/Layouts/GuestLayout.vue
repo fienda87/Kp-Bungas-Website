@@ -1,15 +1,64 @@
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, onUnmounted } from 'vue';
+import { router } from '@inertiajs/vue3';
 import Navbar from '../Components/Landing/Navbar.vue';
 import Footer from '../Components/Landing/Footer.vue';
 import ErrorBoundary from '../Components/ErrorBoundary.vue';
+import SkeletonLoader from '../Components/SkeletonLoader.vue';
+
+// GSAP and Lenis
+import { gsap } from 'gsap';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import Lenis from 'lenis';
+
+gsap.registerPlugin(ScrollTrigger);
 
 const isMounted = ref(false);
+const isLoading = ref(false);
+
+let removeStartEventListener = null;
+let removeFinishEventListener = null;
+let lenis = null;
 
 onMounted(() => {
+    // Mount effect from main
     setTimeout(() => {
         isMounted.value = true;
     }, 50);
+
+    // Setup Lenis Smooth Scrolling
+    lenis = new Lenis({
+        duration: 1.2,
+        easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+        direction: 'vertical',
+        gestureDirection: 'vertical',
+        smooth: true,
+        mouseMultiplier: 1,
+        smoothTouch: false,
+        touchMultiplier: 2,
+        infinite: false,
+    });
+
+    lenis.on('scroll', ScrollTrigger.update);
+
+    gsap.ticker.add((time) => {
+        lenis.raf(time * 1000);
+    });
+
+    gsap.ticker.lagSmoothing(0);
+
+    // Inertia events for Skeleton
+    removeStartEventListener = router.on('start', () => isLoading.value = true);
+    removeFinishEventListener = router.on('finish', () => isLoading.value = false);
+});
+
+onUnmounted(() => {
+    if (removeStartEventListener) removeStartEventListener();
+    if (removeFinishEventListener) removeFinishEventListener();
+    if (lenis) {
+        lenis.destroy();
+        gsap.ticker.remove((time) => lenis.raf(time * 1000));
+    }
 });
 </script>
 
@@ -21,7 +70,18 @@ onMounted(() => {
             :class="isMounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'"
         >
             <ErrorBoundary>
-                <slot />
+                <div v-if="isLoading" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-8">
+                    <!-- Skeleton layout for guest pages -->
+                    <SkeletonLoader type="card" class="h-64 rounded-2xl" />
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                        <SkeletonLoader type="card" class="h-48" />
+                        <SkeletonLoader type="card" class="h-48" />
+                        <SkeletonLoader type="card" class="h-48" />
+                    </div>
+                </div>
+                <div v-else>
+                    <slot />
+                </div>
             </ErrorBoundary>
         </main>
         <Footer />

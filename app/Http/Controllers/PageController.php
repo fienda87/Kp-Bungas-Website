@@ -8,20 +8,30 @@ use App\Models\Gallery;
 use App\Http\Resources\NewsResource;
 use Inertia\Inertia;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 
 class PageController extends Controller
 {
     public function home()
     {
-        $featuredNews = News::where('status', 'published')
-            ->orderBy('published_at', 'desc')
-            ->take(3)
-            ->get();
+        $featuredNews = Cache::remember('home.featured_news', 3600, function () {
+            $news = News::where('status', 'published')
+                ->orderBy('published_at', 'desc')
+                ->take(3)
+                ->get();
+            return NewsResource::collection($news)->resolve();
+        });
 
-        $programs = Program::where('is_active', true)->orderBy('order')->take(4)->get();
+        $programs = Cache::remember('home.programs', 86400, function () {
+            return Program::where('is_active', true)
+                ->orderBy('order')
+                ->take(4)
+                ->get()
+                ->toArray();
+        });
 
         return Inertia::render('Home', [
-            'featuredNews' => NewsResource::collection($featuredNews),
+            'featuredNews' => $featuredNews,
             'programs' => $programs
         ]);
     }
@@ -33,7 +43,10 @@ class PageController extends Controller
 
     public function program()
     {
-        $programs = Program::where('is_active', true)->orderBy('order')->get();
+        $programs = Cache::remember('page.programs', 86400, function () {
+            return Program::where('is_active', true)->orderBy('order')->get()->toArray();
+        });
+        
         return Inertia::render('Program', [
             'programs' => $programs
         ]);
@@ -46,7 +59,10 @@ class PageController extends Controller
 
     public function galeri()
     {
-        $galleries = Gallery::with('photos')->latest()->get();
+        $galleries = Cache::remember('page.galleries', 3600, function () {
+            return Gallery::with('photos')->latest()->get()->toArray();
+        });
+        
         return Inertia::render('Galeri', [
             'galleries' => $galleries
         ]);
@@ -102,15 +118,19 @@ class PageController extends Controller
 
         $news->incrementViewCount();
 
+        $recentNews = Cache::remember('news.recent.' . $news->id, 3600, function () use ($news) {
+            $recent = News::where('status', 'published')
+                ->where('id', '!=', $news->id)
+                ->latest('published_at')
+                ->take(3)
+                ->get();
+            
+            return NewsResource::collection($recent)->resolve();
+        });
+
         return Inertia::render('News/Show', [
             'news' => new NewsResource($news),
-            'recentNews' => NewsResource::collection(
-                News::where('status', 'published')
-                    ->where('id', '!=', $news->id)
-                    ->latest('published_at')
-                    ->take(3)
-                    ->get()
-            )
+            'recentNews' => $recentNews
         ]);
     }
 }

@@ -1,4 +1,6 @@
 import '../css/app.css';
+import '@fontsource/plus-jakarta-sans';
+import 'lenis/dist/lenis.css';
 import './bootstrap';
 
 import { createInertiaApp } from '@inertiajs/vue3';

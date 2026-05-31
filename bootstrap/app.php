@@ -19,14 +19,8 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
         $middleware->web(append: [
             \Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets::class,
-        ]);
-
-        $middleware->web(append: [
-            \Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets::class,
-        ]);
-
-        $middleware->web(append: [
             \App\Http\Middleware\HandleInertiaRequests::class,
+            'throttle:global',
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

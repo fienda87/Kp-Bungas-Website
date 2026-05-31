@@ -22,6 +22,6 @@ defineProps({
         <Hero />
         <AboutStory />
         <ProgramSection :programs="programs" />
-        <LatestNews :news="featuredNews?.data || []" />
+        <LatestNews :news="Array.isArray(featuredNews) ? featuredNews : (featuredNews?.data || [])" />
     </GuestLayout>
 </template>

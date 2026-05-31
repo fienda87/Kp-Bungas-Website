@@ -81,7 +81,7 @@ const activeTextSlide = ref(0);
 const transitioning = ref(true);
 const isSliding = ref(false);
 const textVisible = ref(true);
-const slideTransitionDuration = 1000;
+const slideTransitionDuration = 600;
 const snapDelay = 50;
 let intervalId = null;
 let textSwapTimeout = null;
@@ -227,7 +227,7 @@ onUnmounted(() => {
         <!-- Horizontal Infinite Slide Showcase -->
         <div 
             class="absolute inset-0 z-0 flex"
-            :class="transitioning ? 'transition-transform duration-1000 ease-in-out' : ''"
+            :class="transitioning ? 'transition-transform duration-[600ms] ease-in-out' : ''"
             :style="{ transform: `translateX(-${currentSlide * 100}%)` }"
         >
             <div
