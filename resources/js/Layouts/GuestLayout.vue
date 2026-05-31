@@ -70,16 +70,7 @@ onUnmounted(() => {
             :class="isMounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'"
         >
             <ErrorBoundary>
-                <div v-if="isLoading" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-8">
-                    <!-- Skeleton layout for guest pages -->
-                    <SkeletonLoader type="card" class="h-64 rounded-2xl" />
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-                        <SkeletonLoader type="card" class="h-48" />
-                        <SkeletonLoader type="card" class="h-48" />
-                        <SkeletonLoader type="card" class="h-48" />
-                    </div>
-                </div>
-                <div v-else>
+                <div :class="isLoading ? 'opacity-50 pointer-events-none transition-opacity duration-300' : 'transition-opacity duration-300'">
                     <slot />
                 </div>
             </ErrorBoundary>
