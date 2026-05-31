@@ -5,7 +5,6 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Support\Facades\Storage;
 
 class News extends Model
 {
@@ -39,12 +38,33 @@ class News extends Model
 
     public function getThumbnailUrlAttribute()
     {
-        return $this->thumbnail ? Storage::url($this->thumbnail) : null;
+        return $this->publicFileUrl($this->thumbnail);
     }
 
     public function getPdfUrlAttribute()
     {
-        return $this->pdf_file ? Storage::url($this->pdf_file) : null;
+        return $this->publicFileUrl($this->pdf_file);
+    }
+
+    private function publicFileUrl(?string $path): ?string
+    {
+        if (! $path) {
+            return null;
+        }
+
+        if (
+            str_starts_with($path, 'http://')
+            || str_starts_with($path, 'https://')
+            || str_starts_with($path, '/')
+        ) {
+            return $path;
+        }
+
+        if (str_starts_with($path, 'images/')) {
+            return '/'.$path;
+        }
+
+        return '/storage/'.ltrim($path, '/');
     }
 
     public function getSafeContentAttribute()

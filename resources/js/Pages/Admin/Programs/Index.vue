@@ -221,105 +221,108 @@ watch(() => page.props.flash?.error, (message) => {
             </div>
         </template>
 
-        <div class="py-12">
+        <div class="py-10">
             <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-                <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6">
+                <div class="bg-white overflow-hidden border border-gray-100 shadow-sm rounded-2xl p-6 transition-all duration-300">
                     <!-- Table -->
                     <div class="overflow-x-auto">
                         <table class="min-w-full divide-y divide-gray-200">
-                            <thead class="bg-gray-50">
+                            <thead class="bg-gray-50/70">
                                 <tr>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-12">No</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Title</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Icon</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Image</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Urutan</th>
-                                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Aksi</th>
+                                    <th class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider w-12">No</th>
+                                    <th class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Program</th>
+                                    <th class="hidden sm:table-cell px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider w-20">Icon</th>
+                                    <th class="hidden sm:table-cell px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider w-28">Gambar</th>
+                                    <th class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider w-24">Status</th>
+                                    <th class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider w-28">Urutan</th>
+                                    <th class="px-6 py-4 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Aksi</th>
                                 </tr>
                             </thead>
-                            <tbody class="bg-white divide-y divide-gray-200">
-                                <tr v-for="(program, index) in programs" :key="program.id">
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            <tbody class="bg-white divide-y divide-gray-100">
+                                <tr v-for="(program, index) in programs" :key="program.id" class="hover:bg-slate-50/50 transition-colors duration-150">
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-400">
                                         {{ index + 1 }}
                                     </td>
                                     <td class="px-6 py-4">
-                                        <div class="text-sm font-medium text-gray-900">{{ program.title }}</div>
+                                        <div class="text-sm font-bold text-gray-900 leading-snug">{{ program.title }}</div>
+                                        <div class="text-xs text-gray-400 mt-1 line-clamp-1 max-w-sm">{{ program.description || 'Tidak ada deskripsi.' }}</div>
                                     </td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                        <span v-if="program.icon" class="text-lg">{{ program.icon }}</span>
-                                        <span v-else class="text-gray-400">-</span>
+                                    <td class="hidden sm:table-cell px-6 py-4 whitespace-nowrap text-center text-sm font-semibold text-gray-500">
+                                        <span v-if="program.icon" class="text-lg bg-gray-50 p-2 rounded-xl border border-gray-100 shadow-xs inline-block">{{ program.icon }}</span>
+                                        <span v-else class="text-gray-300">-</span>
                                     </td>
-                                    <td class="px-6 py-4 whitespace-nowrap">
+                                    <td class="hidden sm:table-cell px-6 py-4 whitespace-nowrap">
                                         <img
                                             v-if="program.image_url"
                                             :src="program.image_url"
                                             :alt="program.title"
-                                            class="h-10 w-10 object-cover rounded"
+                                            class="h-10 w-16 object-cover rounded-lg shadow-xs border border-gray-100"
                                         />
-                                        <span v-else class="text-gray-400 text-sm">-</span>
+                                        <span v-else class="text-gray-300 text-sm font-medium">-</span>
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap">
                                         <span
                                             :class="[
-                                                'px-2 inline-flex text-xs leading-5 font-semibold rounded-full',
+                                                'px-2.5 py-1 inline-flex text-xs leading-5 font-bold rounded-full',
                                                 program.is_active
-                                                    ? 'bg-green-100 text-green-800'
-                                                    : 'bg-gray-100 text-gray-800'
+                                                    ? 'bg-green-50 text-green-700 border border-green-100'
+                                                    : 'bg-gray-50 text-gray-500 border border-gray-100'
                                             ]"
                                         >
                                             {{ program.is_active ? 'Aktif' : 'Nonaktif' }}
                                         </span>
                                     </td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                        <div class="flex items-center gap-1">
-                                            <span class="mr-1">{{ program.order }}</span>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600 font-semibold">
+                                        <div class="flex items-center gap-1.5">
+                                            <span class="w-5 text-center font-bold text-gray-800">{{ program.order }}</span>
                                             <button
                                                 @click="moveUp(index)"
                                                 :class="[
-                                                    'p-1 rounded hover:bg-gray-100 focus:outline-none',
-                                                    index === 0 || reorderLoading ? 'text-gray-300 cursor-not-allowed' : 'text-gray-600 hover:text-gray-900'
+                                                    'p-1.5 rounded-xl hover:bg-gray-100 focus:outline-none transition-all duration-150 active:scale-90',
+                                                    index === 0 || reorderLoading ? 'text-gray-200 cursor-not-allowed' : 'text-gray-600 hover:text-primary cursor-pointer'
                                                 ]"
                                                 :disabled="index === 0 || reorderLoading"
                                                 title="Naik"
                                             >
                                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 15l7-7 7 7" />
                                                 </svg>
                                             </button>
                                             <button
                                                 @click="moveDown(index)"
                                                 :class="[
-                                                    'p-1 rounded hover:bg-gray-100 focus:outline-none',
-                                                    index === programs.length - 1 || reorderLoading ? 'text-gray-300 cursor-not-allowed' : 'text-gray-600 hover:text-gray-900'
+                                                    'p-1.5 rounded-xl hover:bg-gray-100 focus:outline-none transition-all duration-150 active:scale-90',
+                                                    index === programs.length - 1 || reorderLoading ? 'text-gray-200 cursor-not-allowed' : 'text-gray-600 hover:text-primary cursor-pointer'
                                                 ]"
                                                 :disabled="index === programs.length - 1 || reorderLoading"
                                                 title="Turun"
                                             >
                                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7" />
                                                 </svg>
                                             </button>
                                         </div>
                                     </td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                        <button
-                                            @click="openEditModal(program)"
-                                            class="text-blue-600 hover:text-blue-900 mr-3"
-                                        >
-                                            Edit
-                                        </button>
-                                        <button
-                                            @click="confirmDelete(program)"
-                                            class="text-red-600 hover:text-red-900"
-                                        >
-                                            Hapus
-                                        </button>
+                                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-bold">
+                                        <div class="flex items-center justify-end gap-1.5">
+                                            <button
+                                                @click="openEditModal(program)"
+                                                class="px-2.5 py-1.5 rounded-xl text-xs border border-emerald-100 bg-emerald-50/50 text-emerald-700 hover:bg-emerald-100 transition-colors cursor-pointer"
+                                            >
+                                                Edit
+                                            </button>
+                                            <button
+                                                @click="confirmDelete(program)"
+                                                class="px-2.5 py-1.5 rounded-xl text-xs border border-red-100 bg-red-50/50 text-red-700 hover:bg-red-100 transition-colors cursor-pointer"
+                                            >
+                                                Hapus
+                                            </button>
+                                        </div>
                                     </td>
                                 </tr>
                                 <tr v-if="programs.length === 0">
-                                    <td colspan="7" class="px-6 py-4 text-center text-gray-500">
-                                        Belum ada program.
+                                    <td colspan="7" class="px-6 py-8 text-center text-gray-400 font-medium">
+                                        Belum ada program desa yang terdaftar.
                                     </td>
                                 </tr>
                             </tbody>
@@ -331,15 +334,15 @@ watch(() => page.props.flash?.error, (message) => {
 
         <!-- Create/Edit Modal -->
         <Modal :show="showFormModal" maxWidth="lg" @close="closeModal">
-            <div class="p-6">
-                <h3 class="text-lg font-semibold text-gray-900 mb-6">
+            <div class="p-6 font-sans">
+                <h3 class="text-lg font-bold text-gray-900 tracking-tight mb-6">
                     {{ isEditing ? 'Edit Program' : 'Tambah Program Baru' }}
                 </h3>
 
-                <form @submit.prevent="submitForm" class="space-y-4">
+                <form @submit.prevent="submitForm" class="space-y-5">
                     <!-- Title -->
                     <div>
-                        <InputLabel for="title" value="Title" />
+                        <InputLabel for="title" value="Judul Program" />
                         <TextInput
                             id="title"
                             v-model="form.title"
@@ -352,19 +355,20 @@ watch(() => page.props.flash?.error, (message) => {
 
                     <!-- Description -->
                     <div>
-                        <InputLabel for="description" value="Deskripsi" />
+                        <InputLabel for="description" value="Deskripsi Singkat" />
                         <textarea
                             id="description"
                             v-model="form.description"
                             rows="3"
-                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                            class="mt-1 block w-full rounded-xl border-gray-300 shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-sm px-4 py-2.5 bg-gray-50/50 transition-all duration-300"
+                            placeholder="Jelaskan mengenai maksud dan tujuan program desa ini..."
                         ></textarea>
                         <InputError :message="form.errors.description" />
                     </div>
 
                     <!-- Icon -->
                     <div>
-                        <InputLabel for="icon" value="Icon" />
+                        <InputLabel for="icon" value="Karakter Icon (Emoji)" />
                         <TextInput
                             id="icon"
                             v-model="form.icon"
@@ -377,7 +381,7 @@ watch(() => page.props.flash?.error, (message) => {
 
                     <!-- Image -->
                     <div>
-                        <InputLabel for="image" value="Gambar" />
+                        <InputLabel for="image" value="Gambar Ilustrasi" />
                         <FileUpload
                             v-model="form.image"
                             accept="image/*"
@@ -392,7 +396,7 @@ watch(() => page.props.flash?.error, (message) => {
 
                     <!-- Order -->
                     <div>
-                        <InputLabel for="order" value="Urutan" />
+                        <InputLabel for="order" value="No. Urutan Tampilan" />
                         <TextInput
                             id="order"
                             v-model="form.order"
@@ -404,24 +408,24 @@ watch(() => page.props.flash?.error, (message) => {
                     </div>
 
                     <!-- Is Active -->
-                    <div class="flex items-center gap-2">
+                    <div class="flex items-center gap-2.5 pt-2">
                         <input
                             id="is_active"
                             v-model="form.is_active"
                             type="checkbox"
-                            class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500"
+                            class="rounded-md border-gray-300 text-primary shadow-sm focus:ring-primary/20 h-4.5 w-4.5"
                         />
-                        <label for="is_active" class="text-sm font-medium text-gray-700">Aktif</label>
+                        <label for="is_active" class="text-sm font-semibold text-gray-700">Tampilkan Program Secara Aktif</label>
                         <InputError :message="form.errors.is_active" />
                     </div>
 
                     <!-- Actions -->
-                    <div class="flex justify-end gap-3 pt-4">
-                        <SecondaryButton type="button" @click="closeModal">
+                    <div class="flex justify-end gap-3 pt-4 border-t border-gray-50">
+                        <SecondaryButton type="button" class="rounded-xl" @click="closeModal">
                             Batal
                         </SecondaryButton>
-                        <PrimaryButton type="submit" :disabled="form.processing">
-                            {{ isEditing ? 'Simpan Perubahan' : 'Simpan' }}
+                        <PrimaryButton type="submit" class="rounded-xl font-bold" :disabled="form.processing">
+                            {{ isEditing ? 'Simpan Perubahan' : 'Tambah Program' }}
                         </PrimaryButton>
                     </div>
                 </form>

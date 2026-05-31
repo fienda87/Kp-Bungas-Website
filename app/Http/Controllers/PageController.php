@@ -79,7 +79,7 @@ class PageController extends Controller
             $query->whereIn('category', $categories);
         }
 
-        $news = $query->orderBy('published_at', 'desc')->paginate(9)->withQueryString();
+        $news = $query->orderBy('published_at', 'desc')->paginate(100)->withQueryString();
 
         return Inertia::render('News/Index', [
             'news' => NewsResource::collection($news),

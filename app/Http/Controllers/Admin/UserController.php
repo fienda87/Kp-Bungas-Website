@@ -29,13 +29,21 @@ class UserController extends Controller
             "name" => "required|string|max:255",
             "email" => "required|string|email|max:255|unique:users",
             "password" => ["required", "confirmed", Password::defaults()],
+            "role_id" => "required|exists:roles,id",
         ]);
 
         $validated["password"] = Hash::make($validated["password"]);
-        $user = User::create($validated);
-        $user->assignRole('admin');
+        
+        $user = User::create([
+            "name" => $validated["name"],
+            "email" => $validated["email"],
+            "password" => $validated["password"],
+        ]);
 
-        return redirect()->back()->with("success", "Pengguna Admin berhasil ditambahkan.");
+        $role = Role::findOrFail($validated["role_id"]);
+        $user->assignRole($role->name);
+
+        return redirect()->back()->with("success", "Pengguna berhasil ditambahkan.");
     }
 
     public function update(Request $request, User $user)
@@ -44,6 +52,7 @@ class UserController extends Controller
             "name" => "required|string|max:255",
             "email" => "required|string|email|max:255|unique:users,email," . $user->id,
             "password" => ["nullable", "confirmed", Password::defaults()],
+            "role_id" => "required|exists:roles,id",
         ]);
 
         if (empty($validated["password"])) {
@@ -54,7 +63,10 @@ class UserController extends Controller
 
         $user->update($validated);
 
-        return redirect()->back()->with("success", "Pengguna Admin berhasil diperbarui.");
+        $role = Role::findOrFail($validated["role_id"]);
+        $user->syncRoles([$role->name]);
+
+        return redirect()->back()->with("success", "Pengguna berhasil diperbarui.");
     }
 
     public function destroy(User $user)
