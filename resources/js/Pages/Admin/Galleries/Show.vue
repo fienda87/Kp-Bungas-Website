@@ -109,12 +109,27 @@ const updateCaption = (photo) => {
     });
 };
 
+// Optimistic Rendering for Cover Image
+const optimisticCoverUrl = ref(props.gallery.cover_image_url);
+
+watch(() => props.gallery.cover_image_url, (newUrl) => {
+    optimisticCoverUrl.value = newUrl;
+});
+
 const setCover = (photo) => {
+    const previousCoverUrl = optimisticCoverUrl.value;
+    // Optimistically update the UI
+    optimisticCoverUrl.value = photo.image_url;
+    
     actionLoading.value = `cover-${photo.id}`;
     router.post(route('admin.galleries.cover.from-photo', [props.gallery.id, photo.id]), {}, {
         preserveScroll: true,
         onSuccess: () => showToast('Cover album berhasil diperbarui'),
-        onError: () => showToast('Terjadi kesalahan saat memperbarui cover', 'error'),
+        onError: () => {
+            // Revert on error
+            optimisticCoverUrl.value = previousCoverUrl;
+            showToast('Terjadi kesalahan saat memperbarui cover', 'error');
+        },
         onFinish: () => {
             actionLoading.value = null;
         },
@@ -146,7 +161,7 @@ const movePhoto = (index, direction) => {
     });
 };
 
-const isCurrentCover = (photo) => props.gallery.cover_image === photo.image_path || props.gallery.cover_image_url === photo.image_url;
+const isCurrentCover = (photo) => props.gallery.cover_image === photo.image_path || optimisticCoverUrl.value === photo.image_url;
 
 const showToast = (message, type = 'success') => {
     toastMessage.value = message;
@@ -196,7 +211,7 @@ watch(() => page.props.flash?.error, (message) => {
                 <AdminSectionCard title="Informasi Album">
                     <div class="grid gap-5 md:grid-cols-[260px_1fr]">
                         <div class="h-48 overflow-hidden rounded-lg bg-gray-100">
-                            <img v-if="gallery.cover_image_url" :src="gallery.cover_image_url" :alt="gallery.album_name" class="h-full w-full object-cover">
+                            <img v-if="optimisticCoverUrl" :src="optimisticCoverUrl" :alt="gallery.album_name" class="h-full w-full object-cover">
                             <div v-else class="flex h-full w-full items-center justify-center text-sm font-semibold text-gray-400">Belum Ada Cover</div>
                         </div>
                         <div>
@@ -209,7 +224,7 @@ watch(() => page.props.flash?.error, (message) => {
                                 </div>
                                 <div class="rounded-lg border border-gray-100 p-3">
                                     <p class="text-xs font-semibold uppercase text-gray-500">Cover</p>
-                                    <p class="mt-1 text-sm font-semibold text-gray-900">{{ gallery.cover_image_url ? 'Tersedia' : 'Belum ada' }}</p>
+                                    <p class="mt-1 text-sm font-semibold text-gray-900">{{ optimisticCoverUrl ? 'Tersedia' : 'Belum ada' }}</p>
                                 </div>
                                 <div class="rounded-lg border border-gray-100 p-3">
                                     <p class="text-xs font-semibold uppercase text-gray-500">Update</p>

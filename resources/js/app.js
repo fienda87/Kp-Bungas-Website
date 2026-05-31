@@ -1,3 +1,4 @@
+import '@fontsource/plus-jakarta-sans';
 import '../css/app.css';
 import './bootstrap';
 

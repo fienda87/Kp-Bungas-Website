@@ -1,10 +1,25 @@
 <script setup>
-import { ref, computed } from 'vue';
-import { Link, usePage } from '@inertiajs/vue3';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { Link, usePage, router } from '@inertiajs/vue3';
 import ErrorBoundary from '../Components/ErrorBoundary.vue';
+import SkeletonLoader from '../Components/SkeletonLoader.vue';
 
 const page = usePage();
 const isSidebarOpen = ref(true);
+const isLoading = ref(false);
+
+let removeStartEventListener = null;
+let removeFinishEventListener = null;
+
+onMounted(() => {
+    removeStartEventListener = router.on('start', () => isLoading.value = true);
+    removeFinishEventListener = router.on('finish', () => isLoading.value = false);
+});
+
+onUnmounted(() => {
+    if (removeStartEventListener) removeStartEventListener();
+    if (removeFinishEventListener) removeFinishEventListener();
+});
 
 const navItems = computed(() => {
     const items = [
@@ -147,7 +162,19 @@ const toggleSidebar = () => {
                     </div>
                     
                     <ErrorBoundary>
-                        <slot />
+                        <div v-if="isLoading" class="space-y-6">
+                            <!-- Skeleton layout for common admin pages -->
+                            <SkeletonLoader type="card" class="h-24" />
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                <SkeletonLoader type="card" class="h-32" />
+                                <SkeletonLoader type="card" class="h-32" />
+                                <SkeletonLoader type="card" class="h-32" />
+                            </div>
+                            <SkeletonLoader type="card" class="h-64" />
+                        </div>
+                        <div v-else>
+                            <slot />
+                        </div>
                     </ErrorBoundary>
                 </div>
             </main>

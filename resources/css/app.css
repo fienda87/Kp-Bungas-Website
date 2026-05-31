@@ -14,3 +14,25 @@
     --color-primary-light: #40916C;
     --color-primary-extralight: #D8F3DC;
 }
+
+@layer base {
+    html {
+        @apply scroll-smooth;
+    }
+    
+    body {
+        @apply transition-colors duration-300 ease-in-out antialiased;
+    }
+
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+    }
+    ::-webkit-scrollbar-track {
+        @apply bg-gray-100 dark:bg-gray-800;
+    }
+    ::-webkit-scrollbar-thumb {
+        @apply rounded bg-gray-400 dark:bg-gray-600 hover:bg-primary;
+    }
+}
